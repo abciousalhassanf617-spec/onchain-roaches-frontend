@@ -1,0 +1,1345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ONCHAIN ROACHES — Mint</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Unbounded:wght@400;700;900&display=swap');
+
+:root {
+  --ink:     #0a0808;
+  --accent:  #6b4423;
+  --accent2: #8a5a2e;
+  --red:     #ff4500;
+  --white:   #ffffff;
+  --sub:     #d4b896;
+  --border:  #1a1210;
+  --card:    rgba(6,4,2,0.92);
+  --mono:    'Space Mono', monospace;
+  --display: 'Unbounded', sans-serif;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; }
+body {
+  font-family: var(--mono);
+  background: var(--ink);
+  color: var(--white);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── BACKGROUND GRID CANVAS ── */
+#bg-canvas {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 0;
+  opacity: 0.45;
+  pointer-events: none;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* ── SCREENS ── */
+.screen { position: relative; z-index: 1; display: none; min-height: 100vh; flex-direction: column; }
+.screen.active { display: flex; }
+
+/* ── HEADER ── */
+.header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 24px; border-bottom: 1px solid var(--border);
+  position: sticky; top: 0;
+  background: rgba(10,10,10,0.95);
+  backdrop-filter: blur(10px);
+  z-index: 10;
+}
+.logo {
+  font-family: var(--display); font-size: clamp(10px, 3vw, 13px);
+  font-weight: 900; letter-spacing: 3px;
+  color: var(--sub); white-space: nowrap;
+}
+.header-right { display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
+.stat-pill { font-size: 9px; letter-spacing: 1px; color: var(--sub); white-space: nowrap; }
+.stat-pill span { color: var(--white); }
+
+/* Connect button */
+.wallet-btn {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 2px;
+  padding: 8px 16px; cursor: pointer;
+  border: 1px solid var(--accent2);
+  background: transparent; color: var(--accent2);
+  transition: all 0.2s;
+  box-shadow: 0 0 8px rgba(107,68,35,0.4);
+  white-space: nowrap;
+}
+.wallet-btn:hover {
+  background: var(--accent2); color: #fff;
+  box-shadow: 0 0 20px rgba(107,68,35,0.7);
+}
+.wallet-btn.connected {
+  border-color: var(--sub); color: var(--sub);
+  box-shadow: none;
+}
+
+/* ── LANDING ── */
+.landing-body {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: clamp(32px, 6vw, 60px) clamp(16px, 4vw, 32px);
+  gap: clamp(24px, 5vw, 40px); text-align: center;
+}
+
+.hero-title {
+  font-family: var(--display);
+  font-size: clamp(20px, 6.5vw, 72px);
+  font-weight: 900; line-height: 1.1; letter-spacing: -1px;
+  white-space: nowrap;
+  width: 100%;
+  text-align: center;
+}
+.hero-title .line1 { color: var(--white); display: inline; }
+.hero-title .line2 { color: var(--accent2); display: inline; margin-left: 0.2em; }
+
+.hero-sub {
+  font-size: clamp(8px, 2vw, 10px);
+  letter-spacing: clamp(1px, 0.5vw, 3px);
+  color: var(--sub); white-space: nowrap;
+}
+
+/* ── BLOCK BAR ── */
+.block-bar-wrap { width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: 8px; }
+.block-bar-row { display: flex; align-items: center; gap: 10px; font-size: 11px; letter-spacing: 1px; }
+.block-bar-label { color: var(--sub); width: 32px; flex-shrink: 0; }
+.block-bar-blocks { color: var(--accent2); letter-spacing: 2px; flex: 1; font-size: 12px; }
+.block-bar-count { color: var(--sub); font-size: 9px; white-space: nowrap; }
+.block-bar-diff { font-size: 9px; letter-spacing: 2px; color: var(--sub); text-align: center; padding-top: 4px; }
+
+/* Cards */
+.mint-cards {
+  display: flex; gap: 16px; flex-direction: column;
+  justify-content: center; width: 100%;
+  max-width: min(480px, 92vw);
+}
+.mint-card {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: var(--card);
+  backdrop-filter: blur(16px);
+  padding: clamp(20px, 5vw, 28px);
+  display: flex; flex-direction: column; gap: 14px;
+}
+.mint-card-label { font-size: 9px; letter-spacing: 4px; color: var(--sub); }
+.mint-card-title {
+  font-family: var(--display);
+  font-size: clamp(16px, 5vw, 22px);
+  font-weight: 700; color: var(--white);
+}
+.mint-card-desc { font-size: 10px; line-height: 1.7; color: var(--sub); }
+.mint-card-price {
+  font-size: clamp(16px, 4vw, 20px);
+  font-weight: 700; color: var(--accent2);
+}
+
+/* Buttons */
+.btn {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 2px;
+  padding: 13px 24px; cursor: pointer; border: none;
+  transition: all 0.15s; width: 100%;
+}
+.btn-primary {
+  background: var(--accent2); color: #fff; font-weight: 700;
+  box-shadow: 0 0 16px rgba(107,68,35,0.4);
+}
+.btn-primary:hover {
+  background: #a06030;
+  box-shadow: 0 0 28px rgba(107,68,35,0.6);
+}
+.btn-secondary {
+  background: var(--accent2); color: #fff; font-weight: 700;
+  box-shadow: 0 0 16px rgba(107,68,35,0.4);
+}
+.btn-secondary:hover {
+  background: #a06030;
+  box-shadow: 0 0 28px rgba(107,68,35,0.6);
+}
+.btn-outline {
+  background: transparent; border: 1px solid var(--border);
+  color: var(--sub); width: auto;
+}
+.btn-outline:hover { border-color: var(--accent2); color: var(--accent2); }
+.btn:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; }
+
+.difficulty-note { font-size: 9px; letter-spacing: 1px; color: var(--sub); }
+.difficulty-note span { color: var(--accent2); }
+
+/* Amount picker */
+.amount-row { display: flex; align-items: center; gap: 12px; }
+.amount-btn {
+  font-family: var(--mono); font-size: 14px; font-weight: 700;
+  width: 36px; height: 36px; border: 1px solid var(--border);
+  background: transparent; color: var(--sub); cursor: pointer; flex-shrink: 0;
+}
+.amount-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+.amount-display { font-size: 20px; font-weight: 700; min-width: 24px; text-align: center; color: var(--white); }
+.amount-total { font-size: 10px; color: var(--sub); letter-spacing: 1px; }
+
+/* ── GAME SCREEN ── */
+.game-body {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; padding: 24px 16px; gap: 16px;
+}
+.game-title-row {
+  display: flex; justify-content: space-between; align-items: center;
+  width: 100%; max-width: 580px;
+}
+.game-label { font-family: var(--display); font-size: 13px; font-weight: 700; color: var(--white); }
+.game-hud { display: flex; gap: 16px; font-size: 10px; letter-spacing: 2px; color: var(--sub); }
+.game-hud span { color: var(--white); }
+
+#simon-canvas {
+  border: 1px solid var(--border); background: #030308;
+  width: min(560px, 96vw); height: min(560px, 96vw);
+  cursor: pointer; image-rendering: pixelated;
+}
+
+.game-msg {
+  font-size: 11px; letter-spacing: 2px; color: var(--sub);
+  min-height: 20px; text-align: center;
+}
+.game-msg.win  { color: var(--accent2); }
+.game-msg.fail { color: var(--red); }
+.game-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+
+/* ── MINT SCREEN ── */
+.mint-body {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 32px 20px; gap: 20px; text-align: center;
+}
+.mint-roach-preview {
+  border: 1px solid var(--border);
+  image-rendering: pixelated; image-rendering: crisp-edges;
+}
+.mint-token-label { font-family: var(--display); font-size: clamp(18px, 5vw, 24px); font-weight: 700; color: var(--white); }
+.mint-traits { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; max-width: 480px; }
+.trait-chip {
+  font-size: 9px; letter-spacing: 1px; padding: 4px 10px;
+  border: 1px solid var(--border); color: var(--sub);
+  background: var(--card);
+}
+.trait-chip.rare { border-color: var(--accent2); color: var(--accent2); }
+.mint-status { font-size: 10px; letter-spacing: 1px; color: var(--sub); min-height: 18px; text-align: center; }
+.mint-status.ok  { color: #4ade80; }
+.mint-status.err {
+  color: #fff;
+  background: rgba(255,60,0,0.15);
+  border: 1px solid rgba(255,60,0,0.4);
+  padding: 10px 16px;
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+
+/* ── TX BAR ── */
+.tx-bar-wrap { width: 100%; max-width: 360px; display: none; }
+.tx-bar-track { height: 2px; background: var(--border); }
+.tx-bar-fill  { height: 100%; background: var(--accent2); width: 0%; transition: width 0.4s; }
+.tx-bar-wrap.show { display: block; }
+
+/* Card row — price + badge side by side */
+.mint-card-row {
+  display: flex; align-items: center;
+  justify-content: space-between; gap: 12px;
+}
+.diff-badge {
+  font-size: 9px; letter-spacing: 2px; font-weight: 700;
+  padding: 4px 10px; border: 1px solid var(--accent2);
+  color: var(--accent2);
+}
+.mint-remaining {
+  font-size: 9px; letter-spacing: 1px; color: var(--sub);
+}
+
+/* Amount picker — centered */
+.amount-picker {
+  display: flex; align-items: center;
+  justify-content: center; gap: 12px;
+  flex-wrap: wrap;
+}
+.amount-btn {
+  font-family: var(--mono); font-size: 16px; font-weight: 700;
+  width: 38px; height: 38px; border: 1px solid var(--border);
+  background: transparent; color: var(--sub); cursor: pointer;
+  flex-shrink: 0;
+}
+.amount-btn:hover:not(:disabled) { border-color: var(--accent2); color: var(--accent2); }
+.amount-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.amount-display {
+  font-size: 28px; font-weight: 700;
+  min-width: 40px; text-align: center; color: var(--white);
+}
+.amount-total { font-size: 10px; color: var(--sub); letter-spacing: 1px; width: 100%; text-align: center; }
+
+/* ── GAME INTRO SCREEN ── */
+.game-intro-body {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 40px 24px; gap: 32px; text-align: center;
+}
+.game-intro-title {
+  font-family: var(--display); font-size: clamp(24px, 6vw, 48px);
+  font-weight: 900; color: var(--white); letter-spacing: -1px;
+}
+.game-intro-stats {
+  display: flex; flex-direction: column; gap: 0;
+  border: 1px solid var(--border); width: 100%; max-width: 320px;
+}
+.game-intro-stat {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 20px; border-bottom: 1px solid var(--border);
+  font-size: 11px; letter-spacing: 2px;
+}
+.game-intro-stat:last-child { border-bottom: none; }
+.game-intro-stat .stat-key { color: var(--sub); }
+.game-intro-stat .stat-val { color: var(--white); font-weight: 700; }
+.game-intro-stat .stat-val.accent { color: var(--accent2); }
+
+@media (max-width: 420px) {
+  .header { padding: 12px 14px; }
+  .stat-pill { display: none; }
+}
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SCREEN 1: LANDING                              -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="screen active" id="screen-landing">
+  <div class="header">
+    <div class="logo">ONCHAIN ROACHES</div>
+    <div class="header-right">
+      <div class="stat-pill">MINTED <span id="hdr-minted">0</span> / <span id="hdr-total">6969</span></div>
+      <button class="wallet-btn" id="wallet-btn" onclick="connectWallet()">CONNECT</button>
+    </div>
+  </div>
+
+  <div class="landing-body">
+    <div class="hero-title"><span class="line1">ONCHAIN</span><span class="line2">ROACHES</span></div>
+    <div class="hero-sub">6969 · FULLY ONCHAIN · 24×24 PIXEL ART · ETHEREUM</div>
+
+    <!-- Random roach preview -->
+    <canvas id="landing-roach" width="120" height="120" style="image-rendering:pixelated;image-rendering:crisp-edges;border:1px solid var(--border);"></canvas>
+
+    <!-- Block bar -->
+    <div class="block-bar-wrap">
+      <div class="block-bar-row">
+        <span class="block-bar-label">FREE</span>
+        <span class="block-bar-blocks" id="free-blocks">░░░░░░░░░░░░░░░░░░░░</span>
+        <span class="block-bar-count"><span id="free-minted">0</span>/<span id="free-supply">3484</span></span>
+      </div>
+      <div class="block-bar-row">
+        <span class="block-bar-label">PAID</span>
+        <span class="block-bar-blocks" id="paid-blocks">░░░░░░░░░░░░░░░░░░░░</span>
+        <span class="block-bar-count"><span id="paid-minted">0</span>/<span id="paid-supply">3485</span></span>
+      </div>
+      <div class="block-bar-diff" id="diff-label">DIFFICULTY: EASY &nbsp;·&nbsp; 0% MINTED</div>
+    </div>
+
+    <div class="mint-cards">
+      <!-- FREE MINT CARD -->
+      <div class="mint-card">
+        <div class="mint-card-label">PATH 01</div>
+        <div class="mint-card-title">FREE MINT</div>
+        <div class="mint-card-desc">Pass the Simon sequence game. One per wallet.</div>
+        <div class="mint-card-row">
+          <div class="mint-card-price">FREE</div>
+          <div class="diff-badge" id="diff-badge">EASY</div>
+        </div>
+        <button class="btn btn-primary" id="btn-free" onclick="startFreeMint()">PLAY TO MINT</button>
+      </div>
+
+      <!-- PAID MINT CARD -->
+      <div class="mint-card">
+        <div class="mint-card-label">PATH 02</div>
+        <div class="mint-card-title">PAID MINT</div>
+        <div class="mint-card-desc">No game required. Mint instantly.</div>
+        <div class="mint-card-row">
+          <div class="mint-card-price" id="paid-price-label">0.0069 ETH</div>
+          <div class="mint-remaining" id="paid-remaining">5 remaining</div>
+        </div>
+        <div class="amount-picker">
+          <button class="amount-btn" onclick="changeAmount(-1)">−</button>
+          <div class="amount-display" id="amount-display">1</div>
+          <button class="amount-btn" onclick="changeAmount(1)">+</button>
+          <div class="amount-total" id="amount-total">TOTAL: 0.0069 ETH</div>
+        </div>
+        <button class="btn btn-secondary" id="btn-paid" onclick="startPaidMint()">MINT NOW</button>
+      </div>
+    </div>
+
+    <div id="landing-status" class="mint-status"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SCREEN 1.5: GAME INTRO                         -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="screen" id="screen-intro">
+  <div class="header">
+    <div class="logo">ONCHAIN ROACHES</div>
+    <div class="header-right">
+      <button class="btn btn-outline" style="padding:6px 14px;font-size:9px" onclick="goToLanding()">← BACK</button>
+    </div>
+  </div>
+  <div class="game-intro-body">
+    <div class="game-intro-title">SIMON<br>SEQUENCE</div>
+    <div class="game-intro-stats">
+      <div class="game-intro-stat">
+        <span class="stat-key">ROUNDS REQUIRED</span>
+        <span class="stat-val accent" id="intro-rounds">5</span>
+      </div>
+      <div class="game-intro-stat">
+        <span class="stat-key">LIVES</span>
+        <span class="stat-val accent" id="intro-lives">3</span>
+      </div>
+      <div class="game-intro-stat">
+        <span class="stat-key">FLASH SPEED</span>
+        <span class="stat-val" id="intro-speed">600ms</span>
+      </div>
+      <div class="game-intro-stat">
+        <span class="stat-key">DIFFICULTY</span>
+        <span class="stat-val accent" id="intro-diff">EASY</span>
+      </div>
+    </div>
+    <button class="btn btn-primary" style="max-width:320px;width:100%" onclick="launchGame()">START GAME</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SCREEN 2: GAME                                 -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="screen" id="screen-game">
+  <div class="header">
+    <div class="logo">ONCHAIN ROACHES</div>
+    <div class="header-right">
+      <button class="btn btn-outline" style="padding:6px 14px;font-size:9px" onclick="goToLanding()">← BACK</button>
+    </div>
+  </div>
+
+  <div class="game-body">
+    <div class="game-title-row" style="max-width:720px;width:100%">
+      <div class="game-label">SIMON SEQUENCE</div>
+      <div class="game-hud">
+        ROUND <span id="g-round">0</span> / <span id="g-req">5</span> &nbsp;·&nbsp;
+        LIVES <span id="g-lives">3</span>
+      </div>
+    </div>
+
+    <canvas id="simon-canvas" width="560" height="560"></canvas>
+
+    <div class="game-msg" id="game-msg">Watch the sequence...</div>
+
+    <div class="game-actions">
+      <button class="btn btn-primary" id="btn-claim" onclick="claimWin()" style="display:none">CLAIM FREE MINT →</button>
+      <button class="btn btn-outline" onclick="restartGame()">RESTART</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SCREEN 3: MINT CONFIRM                         -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="screen" id="screen-mint">
+  <div class="header">
+    <div class="logo">ONCHAIN ROACHES</div>
+    <div class="header-right">
+      <button class="btn btn-outline" style="padding:6px 14px;font-size:9px" onclick="goToLanding()">← BACK</button>
+    </div>
+  </div>
+
+  <div class="mint-body">
+    <canvas class="mint-roach-preview" id="preview-canvas" width="240" height="240"></canvas>
+    <div class="mint-token-label" id="mint-token-label">ONCHAIN ROACHES</div>
+    <div class="mint-traits" id="mint-traits"></div>
+    <div class="mint-status" id="mint-status"></div>
+    <div class="tx-bar-wrap" id="tx-bar-wrap">
+      <div class="tx-bar-track"><div class="tx-bar-fill" id="tx-bar-fill"></div></div>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
+      <button class="btn btn-primary" id="btn-confirm-mint" onclick="confirmMint()">CONFIRM MINT</button>
+      <button class="btn btn-outline" onclick="goToLanding()">CANCEL</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════════
+const CONTRACT_ADDRESS = "0x5fAA44501f60Bd35843f4D04764DF9A7B0a53B05";
+const BACKEND_URL      = "https://onchain-roach-server-production.up.railway.app";
+const CHAIN_ID         = 11155111; // Sepolia
+
+const ABI = [
+  "function mintFree(bytes32 nonce, uint256 expiry, bytes calldata sig) external",
+  "function mintPaid(uint256 amount) external payable",
+  "function totalSupply() view returns (uint256)",
+  "function freeSupply() view returns (uint256)",
+  "function paidSupply() view returns (uint256)",
+  "function freeMinted() view returns (uint256)",
+  "function paidMinted() view returns (uint256)",
+  "function paidPrice() view returns (uint256)",
+  "function maxPaidMintPerWallet() view returns (uint256)",
+  "function maxFreeMintPerWallet() view returns (uint256)",
+  "function mintingOpen() view returns (bool)",
+  "function freeMintCount(address) view returns (uint256)",
+  "function paidMintCount(address) view returns (uint256)",
+  "function tokenURI(uint256) view returns (string)",
+];
+
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+let provider, signer, contract, readContract;
+let walletAddress = null;
+let mintMode = null;
+let paidAmount = 1;
+let paidPrice  = 0.0069;
+let maxPaidPerWallet = 5;
+let maxFreePerWallet = 1;
+let paidAlreadyMinted = 0; // tracks how many paid mints wallet has done
+let gameSession = null;
+let gameSig     = null;
+
+// Read-only provider — loads stats before wallet connect
+// Using publicnode — reliable, no key needed
+const RPC_URL = "https://ethereum-sepolia-rpc.publicnode.com";
+try {
+  const readProvider = new ethers.JsonRpcProvider(RPC_URL);
+  readContract = new ethers.Contract(CONTRACT_ADDRESS, ABI, readProvider);
+} catch(e) { console.error("readContract init failed:", e); }
+
+// Difficulty from contract state
+const DIFFICULTY = [
+  { maxPct: 25,  rounds: 5, lives: 3, speed: 600 },
+  { maxPct: 50,  rounds: 6, lives: 2, speed: 450 },
+  { maxPct: 75,  rounds: 7, lives: 2, speed: 320 },
+  { maxPct: 90,  rounds: 8, lives: 1, speed: 220 },
+  { maxPct: 100, rounds: 9, lives: 1, speed: 150 },
+];
+
+function getDifficulty(pct) {
+  for (const d of DIFFICULTY) { if (pct < d.maxPct) return d; }
+  return DIFFICULTY[DIFFICULTY.length - 1];
+}
+
+// ═══════════════════════════════════════════════════════════
+// WALLET
+// ═══════════════════════════════════════════════════════════
+async function connectWallet() {
+  if (!window.ethereum) {
+    showError("No wallet detected. Install MetaMask to continue.");
+    return;
+  }
+  try {
+    provider = new ethers.BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+
+    // Check and switch network
+    const network = await provider.getNetwork();
+    if (Number(network.chainId) !== CHAIN_ID) {
+      try {
+        // Try switching first
+        await window.ethereum.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: "0x" + CHAIN_ID.toString(16) }],
+        });
+      } catch (switchErr) {
+        // If chain not added (error 4902), add it
+        if (switchErr.code === 4902) {
+          try {
+            await window.ethereum.request({
+              method: "wallet_addEthereumChain",
+              params: [{
+                chainId: "0x" + CHAIN_ID.toString(16),
+                chainName: "Sepolia Testnet",
+                nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
+                rpcUrls: ["https://ethereum-sepolia-rpc.publicnode.com"],
+                blockExplorerUrls: ["https://sepolia.etherscan.io"],
+              }],
+            });
+          } catch (addErr) {
+            showError("Could not add Sepolia network. Add it manually in MetaMask.");
+            return;
+          }
+        } else {
+          showError("Please switch to Sepolia testnet in your wallet.");
+          return;
+        }
+      }
+      // Re-init provider after switch
+      provider = new ethers.BrowserProvider(window.ethereum);
+    }
+
+    signer  = await provider.getSigner();
+    walletAddress = await signer.getAddress();
+    contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+
+    const btn = document.getElementById("wallet-btn");
+    btn.textContent = walletAddress.slice(0,6) + "..." + walletAddress.slice(-4);
+    btn.classList.add("connected");
+
+    await refreshStats();
+    clearError();
+  } catch (e) {
+    if (e.code === 4001) {
+      showError("Connection rejected. Accept the request in your wallet.");
+    } else {
+      showError("Connection failed. " + (e.message || "Try again."));
+    }
+  }
+}
+
+function showError(msg) {
+  setLandingStatus(msg, "err");
+}
+function clearError() {
+  setLandingStatus("", "");
+}
+
+// ═══════════════════════════════════════════════════════════
+// STATS
+// ═══════════════════════════════════════════════════════════
+async function refreshStats() {
+  const c = contract || readContract;
+  if (!c) return;
+  try {
+    const [fm, pm, fs, ps, ts, price, maxPaid, maxFree] = await Promise.all([
+      c.freeMinted(),
+      c.paidMinted(),
+      c.freeSupply(),
+      c.paidSupply(),
+      c.totalSupply(),
+      c.paidPrice(),
+      c.maxPaidMintPerWallet(),
+      c.maxFreeMintPerWallet(),
+    ]);
+
+    const total   = Number(ts);
+    const minted  = Number(fm) + Number(pm);
+    const pct     = Math.round(minted / total * 100);
+    const diff    = getDifficulty(pct);
+
+    paidPrice        = Number(ethers.formatEther(price));
+    maxPaidPerWallet = Number(maxPaid);
+    maxFreePerWallet = Number(maxFree);
+
+    document.getElementById("hdr-minted").textContent   = minted;
+    document.getElementById("hdr-total").textContent    = total;
+    document.getElementById("free-minted").textContent  = Number(fm);
+    document.getElementById("free-supply").textContent  = Number(fs);
+    document.getElementById("paid-minted").textContent  = Number(pm);
+    document.getElementById("paid-supply").textContent  = Number(ps);
+
+    // Block bar
+    const BLOCKS = 20;
+    const freeBlocks  = Math.round(Number(fm) / Number(fs) * BLOCKS);
+    const paidBlocks  = Math.round(Number(pm) / Number(ps) * BLOCKS);
+    document.getElementById("free-blocks").textContent =
+      "█".repeat(freeBlocks) + "░".repeat(BLOCKS - freeBlocks);
+    document.getElementById("paid-blocks").textContent =
+      "█".repeat(paidBlocks) + "░".repeat(BLOCKS - paidBlocks);
+
+    const tierLabel = pct < 25 ? "EASY" : pct < 50 ? "MEDIUM" : pct < 75 ? "HARD" : pct < 90 ? "BRUTAL" : "NO MERCY";
+    document.getElementById("diff-label").textContent = `DIFFICULTY: ${tierLabel} · ${pct}% MINTED`;
+    const badge = document.getElementById("diff-badge");
+    if (badge) badge.textContent = tierLabel;
+    document.getElementById("paid-price-label").textContent = paidPrice + " ETH";
+
+    // Check wallet free mint status
+    if (walletAddress) {
+      const freeCount = await c.freeMintCount(walletAddress);
+      const paidCount = await c.paidMintCount(walletAddress);
+      paidAlreadyMinted = Number(paidCount);
+      const usedFree    = Number(freeCount) >= maxFreePerWallet;
+      const remaining   = maxPaidPerWallet - paidAlreadyMinted;
+      const usedPaid    = remaining <= 0;
+
+      // Cap paidAmount to remaining
+      if (paidAmount > remaining && remaining > 0) paidAmount = remaining;
+      if (remaining <= 0) paidAmount = 0;
+
+      const btnFree = document.getElementById("btn-free");
+      if (usedFree) {
+        btnFree.disabled = true;
+        btnFree.textContent = "FREE MINT USED";
+        btnFree.style.opacity = "0.4";
+        btnFree.style.cursor  = "not-allowed";
+      } else {
+        btnFree.disabled = false;
+        btnFree.textContent = "PLAY TO MINT";
+        btnFree.style.opacity = "1";
+        btnFree.style.cursor  = "pointer";
+      }
+
+      const btnPaid = document.getElementById("btn-paid");
+      if (usedPaid) {
+        btnPaid.disabled = true;
+        btnPaid.textContent = "LIMIT REACHED";
+        btnPaid.style.opacity = "0.4";
+      } else {
+        btnPaid.disabled = false;
+        btnPaid.textContent = "MINT NOW";
+        btnPaid.style.opacity = "1";
+      }
+
+      // Show remaining in card
+      const remEl = document.getElementById("paid-remaining");
+      if (remEl) remEl.textContent = remaining > 0 ? `${remaining} remaining` : "none left";
+    }
+
+    updateAmountDisplay();
+  } catch(e) { console.error("refreshStats:", e); }
+}
+
+// ═══════════════════════════════════════════════════════════
+// PAID AMOUNT
+// ═══════════════════════════════════════════════════════════
+function changeAmount(delta) {
+  const remaining = maxPaidPerWallet - paidAlreadyMinted;
+  paidAmount = Math.max(1, Math.min(remaining, paidAmount + delta));
+  updateAmountDisplay();
+}
+
+function updateAmountDisplay() {
+  const remaining = maxPaidPerWallet - paidAlreadyMinted;
+  document.getElementById("amount-display").textContent = paidAmount;
+  document.getElementById("amount-total").textContent   = `TOTAL: ${(paidPrice * paidAmount).toFixed(4)} ETH`;
+  // Disable + if at limit
+  const plusBtn = document.querySelector(".amount-btn:last-of-type");
+  if (plusBtn) plusBtn.disabled = paidAmount >= remaining;
+}
+
+// ═══════════════════════════════════════════════════════════
+// SCREEN NAV
+// ═══════════════════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+
+function goToLanding() {
+  stopGame();
+  showScreen("screen-landing");
+  refreshStats();
+}
+
+// ═══════════════════════════════════════════════════════════
+// FREE MINT FLOW
+// ═══════════════════════════════════════════════════════════
+async function startFreeMint() {
+  if (!walletAddress) { connectWallet(); return; }
+
+  const open = await contract.mintingOpen();
+  if (!open) { setLandingStatus("Minting is not open yet.", "err"); return; }
+
+  const count = await contract.freeMintCount(walletAddress);
+  if (Number(count) >= maxFreePerWallet) {
+    setLandingStatus("You've already used your free mint.", "err");
+    return;
+  }
+
+  try {
+    const fm  = await contract.freeMinted();
+    const ts  = await contract.totalSupply();
+    const pct = Math.round((Number(fm)) / Number(ts) * 100);
+    const diff = getDifficulty(pct);
+
+    const res = await fetch(BACKEND_URL + "/api/session/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ walletAddress, mintedPct: pct }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    gameSession = { id: data.sessionId, requiredRounds: data.requiredRounds };
+    mintMode = "free";
+
+    // Show intro screen with difficulty details
+    const tierLabel = pct < 25 ? "EASY" : pct < 50 ? "MEDIUM" : pct < 75 ? "HARD" : pct < 90 ? "BRUTAL" : "NO MERCY";
+    document.getElementById("intro-rounds").textContent = diff.rounds;
+    document.getElementById("intro-lives").textContent  = diff.lives;
+    document.getElementById("intro-speed").textContent  = diff.speed + "ms";
+    document.getElementById("intro-diff").textContent   = tierLabel;
+    showScreen("screen-intro");
+
+  } catch(e) {
+    setLandingStatus("Error: " + e.message, "err");
+  }
+}
+
+function launchGame() {
+  startGame(gameSession.requiredRounds);
+}
+
+// ═══════════════════════════════════════════════════════════
+// PAID MINT FLOW
+// ═══════════════════════════════════════════════════════════
+async function startPaidMint() {
+  if (!walletAddress) { connectWallet(); return; }
+
+  const open = await contract.mintingOpen();
+  if (!open) { setLandingStatus("Minting is not open yet.", "err"); return; }
+
+  const count = await contract.paidMintCount(walletAddress);
+  if (Number(count) + paidAmount > maxPaidPerWallet) {
+    setLandingStatus(`You can only mint ${maxPaidPerWallet} paid total. Used: ${count}`, "err");
+    return;
+  }
+
+  mintMode = "paid";
+  gameSig  = null;
+  showMintScreen();
+}
+
+// ═══════════════════════════════════════════════════════════
+// SIMON GAME
+// ═══════════════════════════════════════════════════════════
+const SEQ_COLORS = [
+  { hex: "#7c3aed", light: "#a855f7" },
+  { hex: "#0891b2", light: "#22d3ee" },
+  { hex: "#c2410c", light: "#f97316" },
+  { hex: "#15803d", light: "#22c55e" },
+];
+
+let game = {
+  sequence: [], playerSeq: [], round: 0, lives: 3,
+  phase: "idle", requiredRounds: 5, flashSpeed: 600,
+};
+
+function startGame(requiredRounds) {
+  const pct = 0; // already fetched, use cached diff
+  game = {
+    sequence: [], playerSeq: [], round: 0,
+    lives: 3, phase: "idle",
+    requiredRounds,
+    flashSpeed: getDifficultyFromRounds(requiredRounds),
+  };
+  document.getElementById("g-req").textContent   = requiredRounds;
+  document.getElementById("g-lives").textContent = game.lives;
+  document.getElementById("g-round").textContent = 0;
+  document.getElementById("btn-claim").style.display = "none";
+  document.getElementById("game-msg").className  = "game-msg";
+  document.getElementById("game-msg").textContent = "Watch the sequence...";
+
+  const canvas = document.getElementById("simon-canvas");
+  canvas.onclick     = simonClick;
+  canvas.ontouchstart = simonClick;
+
+  showScreen("screen-game");
+  setTimeout(() => nextRound(), 800);
+  renderSimon(-1, false);
+}
+
+function getDifficultyFromRounds(rounds) {
+  const d = DIFFICULTY.find(x => x.rounds === rounds);
+  return d ? d.speed : 600;
+}
+
+function stopGame() {
+  game.phase = "idle";
+}
+
+function restartGame() {
+  if (gameSession) startGame(gameSession.requiredRounds);
+}
+
+function nextRound() {
+  if (game.phase === "dead" || game.phase === "won") return;
+  game.round++;
+  game.playerSeq = [];
+  game.sequence.push(Math.floor(Math.random() * 4));
+  game.phase = "showing";
+  document.getElementById("g-round").textContent = game.round;
+  setGameMsg("Watch...", "");
+  showSequence(0);
+}
+
+function showSequence(i) {
+  if (game.phase === "dead") return;
+  if (i >= game.sequence.length) {
+    game.phase = "player";
+    setGameMsg("Your turn. Repeat it.", "");
+    renderSimon(-1, false);
+    return;
+  }
+  renderSimon(game.sequence[i], true);
+  setTimeout(() => {
+    renderSimon(-1, false);
+    setTimeout(() => showSequence(i + 1), 180);
+  }, game.flashSpeed);
+}
+
+function simonClick(e) {
+  if (game.phase !== "player") return;
+  e.preventDefault();
+
+  const canvas = document.getElementById("simon-canvas");
+  const r      = canvas.getBoundingClientRect();
+
+  // Handle both touch and mouse
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+  // Scale to canvas internal coords (always 560×560)
+  const x = (clientX - r.left)  * (canvas.width  / r.width);
+  const y = (clientY - r.top)   * (canvas.height / r.height);
+
+  const W = canvas.width, half = W / 2, pad = 12;
+
+  let clicked = -1;
+  if      (x < half - pad/2 && y < half - pad/2) clicked = 0; // top-left
+  else if (x > half + pad/2 && y < half - pad/2) clicked = 1; // top-right
+  else if (x < half - pad/2 && y > half + pad/2) clicked = 2; // bottom-left
+  else if (x > half + pad/2 && y > half + pad/2) clicked = 3; // bottom-right
+  if (clicked < 0) return;
+
+  game.playerSeq.push(clicked);
+  renderSimon(clicked, true);
+  setTimeout(() => renderSimon(-1, false), 120);
+
+  const pos = game.playerSeq.length - 1;
+  if (game.playerSeq[pos] !== game.sequence[pos]) {
+    // Wrong
+    game.lives--;
+    document.getElementById("g-lives").textContent = game.lives;
+    if (game.lives <= 0) {
+      game.phase = "dead";
+      setGameMsg("✗ FAILED. No lives left. Restart to try again.", "fail");
+      return;
+    }
+    setGameMsg(`✗ Wrong! ${game.lives} life left. Watch again...`, "fail");
+    game.playerSeq = [];
+    setTimeout(() => showSequence(0), 1200);
+    return;
+  }
+
+  if (game.playerSeq.length === game.sequence.length) {
+    if (game.round >= game.requiredRounds) {
+      game.phase = "won";
+      setGameMsg("✓ SEQUENCE MASTERED. Claiming your mint...", "win");
+      document.getElementById("btn-claim").style.display = "block";
+      fetchGamePass();
+      return;
+    }
+    setGameMsg(`Round ${game.round} ✓ Get ready...`, "win");
+    setTimeout(() => nextRound(), 900);
+  }
+}
+
+function renderSimon(lit, bright) {
+  const canvas = document.getElementById("simon-canvas");
+  const ctx    = canvas.getContext("2d");
+  const W = 560, H = 560, pad = 12, half = W / 2;
+
+  ctx.fillStyle = "#030308";
+  ctx.fillRect(0, 0, W, H);
+
+  const quads = [
+    [pad, pad, half - pad - pad/2, half - pad - pad/2],
+    [half + pad/2, pad, half - pad - pad/2, half - pad - pad/2],
+    [pad, half + pad/2, half - pad - pad/2, half - pad - pad/2],
+    [half + pad/2, half + pad/2, half - pad - pad/2, half - pad - pad/2],
+  ];
+
+  quads.forEach(([bx, by, bw, bh], i) => {
+    const c = SEQ_COLORS[i];
+    const isLit = i === lit;
+    ctx.globalAlpha = isLit ? 1 : 0.35;
+    ctx.fillStyle   = isLit ? c.light : c.hex;
+    ctx.shadowBlur  = isLit ? 40 : 0;
+    ctx.shadowColor = c.light;
+    ctx.fillRect(bx, by, bw, bh);
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur  = 0;
+    ctx.strokeStyle = isLit ? c.light : "rgba(255,255,255,0.08)";
+    ctx.lineWidth   = isLit ? 2 : 1;
+    ctx.strokeRect(bx, by, bw, bh);
+  });
+
+  // Center dot
+  ctx.beginPath();
+  ctx.arc(W/2, H/2, 18, 0, Math.PI * 2);
+  ctx.fillStyle = "#030308";
+  ctx.fill();
+  ctx.strokeStyle = "#1a1a1a";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+}
+
+function setGameMsg(msg, type) {
+  const el = document.getElementById("game-msg");
+  el.textContent = msg;
+  el.className = "game-msg " + type;
+}
+
+// ═══════════════════════════════════════════════════════════
+// FETCH GAME PASS FROM BACKEND
+// ═══════════════════════════════════════════════════════════
+async function fetchGamePass() {
+  try {
+    const res = await fetch(BACKEND_URL + "/api/game-pass", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sessionId:       gameSession.id,
+        walletAddress,
+        roundsCompleted: game.round,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    gameSig = data;
+    setGameMsg("✓ Game verified. Claim your mint below.", "win");
+  } catch(e) {
+    setGameMsg("Backend error: " + e.message + ". Try again.", "fail");
+  }
+}
+
+async function claimWin() {
+  if (!gameSig) {
+    setGameMsg("Waiting for backend verification...", "");
+    return;
+  }
+  showMintScreen();
+}
+
+// ═══════════════════════════════════════════════════════════
+// MINT SCREEN
+// ═══════════════════════════════════════════════════════════
+async function showMintScreen() {
+  showScreen("screen-mint");
+
+  // Preview next token
+  try {
+    let nextId;
+    if (mintMode === "free") {
+      const fm = await contract.freeMinted();
+      nextId = Number(fm) + 1;
+    } else {
+      const fs = await contract.freeSupply();
+      const pm = await contract.paidMinted();
+      nextId = Number(fs) + Number(pm) + 1;
+    }
+
+    document.getElementById("mint-token-label").textContent = `ONCHAIN ROACH #${nextId}`;
+    drawPreview(nextId);
+
+    const label = mintMode === "free"
+      ? "FREE MINT. Sign to confirm."
+      : `PAID MINT. ${(paidPrice * paidAmount).toFixed(4)} ETH`;
+    setMintStatus(label, "");
+  } catch(e) {
+    setMintStatus("Preview failed: " + e.message, "err");
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// CONFIRM MINT (onchain tx)
+// ═══════════════════════════════════════════════════════════
+async function confirmMint() {
+  const btn = document.getElementById("btn-confirm-mint");
+  btn.disabled = true;
+
+  try {
+    setMintStatus("Waiting for wallet...", "");
+    showTxBar(true);
+
+    let tx;
+    if (mintMode === "free") {
+      if (!gameSig) throw new Error("No game signature");
+      tx = await contract.mintFree(gameSig.nonce, gameSig.expiry, gameSig.signature);
+    } else {
+      const value   = ethers.parseEther((paidPrice * paidAmount).toFixed(18));
+      // Check balance before submitting
+      const balance = await provider.getBalance(walletAddress);
+      if (balance < value) {
+        throw { message: "insufficient funds" };
+      }
+      tx = await contract.mintPaid(paidAmount, { value });
+    }
+
+    setMintStatus("Transaction submitted. Confirming...", "");
+    animateTxBar();
+
+    const receipt = await tx.wait();
+    showTxBar(false);
+    setMintStatus("✓ MINTED! " + receipt.hash.slice(0,10) + "...", "ok");
+    btn.textContent = "MINTED ✓";
+
+    // Reset game sig
+    gameSig = null;
+    gameSession = null;
+  } catch(e) {
+    showTxBar(false);
+    btn.disabled = false;
+    let msg = "Transaction failed.";
+    if (e.code === 4001 || e?.info?.error?.code === 4001) {
+      msg = "Rejected. You declined the transaction.";
+    } else if (e?.reason) {
+      msg = e.reason;
+    } else if (e?.message?.includes("insufficient funds")) {
+      msg = "Insufficient funds for this transaction.";
+    } else if (e?.message?.includes("Invalid signature")) {
+      msg = "Signature expired. Go back and try again.";
+    } else if (e?.message) {
+      msg = e.message.split("(")[0].trim();
+    }
+    setMintStatus("✗ " + msg, "err");
+  }
+}
+
+function showTxBar(show) {
+  document.getElementById("tx-bar-wrap").className = "tx-bar-wrap" + (show ? " show" : "");
+  document.getElementById("tx-bar-fill").style.width = show ? "0%" : "0%";
+}
+
+function animateTxBar() {
+  let w = 0;
+  const fill = document.getElementById("tx-bar-fill");
+  const tick = setInterval(() => {
+    w = Math.min(90, w + Math.random() * 8);
+    fill.style.width = w + "%";
+    if (w >= 90) clearInterval(tick);
+  }, 400);
+}
+
+function setMintStatus(msg, type) {
+  const el = document.getElementById("mint-status");
+  el.textContent = msg;
+  el.className = "mint-status " + type;
+}
+
+// ═══════════════════════════════════════════════════════════
+// PIXEL ART PREVIEW (same LCG as contract)
+// ═══════════════════════════════════════════════════════════
+function lcg(seed) {
+  const rolls = []; let s = (seed * 6969 + 42) >>> 0;
+  for (let i = 0; i < 7; i++) { s = ((s * 1664525 + 1013904223) >>> 0); rolls.push(s); }
+  return rolls;
+}
+function pick(roll, weights) {
+  const r = roll % 100; let c = 0;
+  for (let i = 0; i < weights.length; i++) { c += weights[i]; if (r < c) return i; }
+  return weights.length - 1;
+}
+const W_BG=[22,20,18,15,12,8,3,2],W_BODY=[28,24,18,14,10,1,5],W_ANTENNA=[40,30,20,10];
+const W_EYES=[35,28,20,12,5],W_LEGS=[55,30,15],W_SHELL=[35,28,20,12,5],W_ACC=[90,5,5];
+const BODY_COLOR=["#6b4423","#2e1a0e","#d4b896","#3a5e28","#1e3a5e","#5e1e1e","#8a6a00"];
+const BODY_SHADE=["#3d2610","#1a0e06","#a08060","#223818","#122238","#381212","#5c4400"];
+const BG_COLOR=["#080808","#0f1a0f","#1a1208","#1a0c08","#080f1a","#06000f","#1a1400","#000f08"];
+const BG_NAMES=["Void","Sewer","Dirt","Rust","Lab","Neon Night","Gold","Glitch"];
+const BODY_NAMES=["Brown","Dark","Albino","Green","Blue","Red","Gold"];
+const ANT_NAMES=["Straight","Curly","Broken","Long"];
+const EYE_NAMES=["Beady","Big","Angry","Dead","Laser"];
+const LEG_NAMES=["6 Legs","4 Legs","8 Legs"];
+const SHELL_NAMES=["Smooth","Ridged","Spotted","Cracked","Glowing"];
+const ACC_NAMES=["None","Wings","Crown"];
+const RARE_TRAITS=["Gold","Wings","Crown","Laser","Neon Night","Glitch"];
+
+function getTraits(seed) {
+  const r = lcg(seed);
+  return { bg: pick(r[0],W_BG), body: pick(r[1],W_BODY), antenna: pick(r[2],W_ANTENNA),
+    eyes: pick(r[3],W_EYES), legs: pick(r[4],W_LEGS), shell: pick(r[5],W_SHELL), accessory: pick(r[6],W_ACC) };
+}
+
+function buildPixels(t) {
+  const grid = Array.from({length:24},()=>Array(24).fill(null));
+  const bc=BODY_COLOR[t.body], bs=BODY_SHADE[t.body];
+  const p=(c,r,color)=>{if(r>=0&&r<24&&c>=0&&c<24)grid[r][c]=color;};
+  const row=(c1,c2,r,color)=>{for(let c=c1;c<=c2;c++)grid[r][c]=color;};
+  const bgc=BG_COLOR[t.bg];
+  for(let r=0;r<24;r++)for(let c=0;c<24;c++)grid[r][c]=bgc;
+  if(t.bg===1){[[3,0],[3,1],[3,2],[9,0],[9,1],[16,0],[16,1],[16,2],[16,3],[21,0],[21,1]].forEach(([c,r])=>p(c,r,"#1a3a1a"));}
+  if(t.bg===3){[5,12,18].forEach(r=>row(0,23,r,"#2a1008"));}
+  if(t.bg===5){for(let r=0;r<24;r+=4)for(let c=0;c<24;c+=4)p(c,r,"#0a1a00");}
+  if(t.bg===6){for(let i=0;i<24;i++)p(i,i,"#2a2000");}
+  if(t.bg===7){row(0,23,4,"#001a0a");row(0,15,11,"#001a0a");row(5,23,16,"#1a0005");row(0,23,20,"#001a0a");}
+  if(t.accessory===1){
+    [[6,9],[5,9],[4,9],[6,10],[5,10],[4,10],[3,10],[6,11],[5,11],[4,11],[3,11],[2,11],[6,12],[5,12],[4,12],[3,12],[6,13],[5,13]].forEach(([c,r])=>p(c,r,"#a0cc44"));
+    [[17,9],[18,9],[19,9],[17,10],[18,10],[19,10],[20,10],[17,11],[18,11],[19,11],[20,11],[21,11],[17,12],[18,12],[19,12],[20,12],[17,13],[18,13]].forEach(([c,r])=>p(c,r,"#a0cc44"));
+    [[5,10],[4,11],[5,11],[18,10],[19,11],[18,11]].forEach(([c,r])=>p(c,r,"#b0dd55"));
+    [[4,9],[3,10],[2,11],[3,12],[19,9],[20,10],[21,11],[20,12],[6,13],[5,13],[17,13],[18,13]].forEach(([c,r])=>p(c,r,"#88aa33"));
+  }
+  const legRows6=[10,12,14,16,18,20],legRows4=[10,13],legRows8=[9,11,13,15,16,17,18,19];
+  const legSet=t.legs===1?legRows4:t.legs===2?legRows8:legRows6;
+  const lcount=t.legs===1?2:t.legs===2?4:3;
+  for(let i=0;i<lcount;i++){const r=legSet[i];p(6,r,bc);p(5,r,bc);p(4,r+1,bc);p(17,r,bc);p(18,r,bc);p(19,r+1,bc);}
+  row(9,14,8,bc);row(8,15,9,bc);row(7,16,10,bc);
+  for(let r=11;r<=18;r++){row(7,16,r,bc);p(7,r,bs);p(16,r,bs);}
+  row(8,15,19,bc);row(9,14,20,bc);row(10,13,21,bc);
+  if(t.shell===1){[10,13,16,19].forEach(r=>row(8,15,r,bs));}
+  if(t.shell===2){[[9,10],[12,11],[10,13],[14,13],[11,15],[9,17],[13,17],[11,19]].forEach(([c,r])=>p(c,r,bs));}
+  if(t.shell===3){[[11,9],[12,10],[11,11],[12,12],[11,13],[12,14],[11,15],[12,16],[11,17],[12,18],[11,19]].forEach(([c,r])=>p(c,r,bs));}
+  if(t.shell===4){row(9,14,8,"#c8ff00");row(9,14,21,"#c8ff00");[10,14,18].forEach(r=>{p(7,r,"#c8ff00");p(16,r,"#c8ff00");});}
+  row(10,13,4,bc);row(9,14,5,bc);p(9,5,bs);p(14,5,bs);row(9,14,6,bc);p(9,6,bs);p(14,6,bs);row(9,14,7,bc);
+  p(8,8,bs);p(9,8,bc);row(10,13,8,bc);p(14,8,bc);p(15,8,bs);
+  if(t.eyes===0){p(10,6,"#0a0a0a");p(13,6,"#0a0a0a");}
+  if(t.eyes===1){p(10,5,"#fff");p(11,5,"#fff");p(10,6,"#0a0a0a");p(11,6,"#fff");p(13,5,"#fff");p(14,5,"#fff");p(13,6,"#0a0a0a");p(14,6,"#fff");}
+  if(t.eyes===2){p(10,5,"#0a0a0a");p(13,5,"#0a0a0a");p(10,6,"#cc2200");p(13,6,"#cc2200");}
+  if(t.eyes===3){p(10,5,"#666");p(11,6,"#666");p(11,5,"#666");p(10,6,"#666");p(13,5,"#666");p(14,6,"#666");p(14,5,"#666");p(13,6,"#666");}
+  if(t.eyes===4){p(10,6,"#ff3300");p(13,6,"#ff3300");p(5,6,"#ff3300");p(6,6,"#ff5500");p(17,6,"#ff5500");p(18,6,"#ff3300");}
+  if(t.antenna===0){p(10,3,bs);p(10,2,bs);p(10,1,"#fff");p(13,3,bs);p(13,2,bs);p(13,1,"#fff");}
+  if(t.antenna===1){p(10,3,bs);p(10,2,bs);p(9,2,bs);p(8,2,bs);p(8,1,"#fff");p(13,3,bs);p(13,2,bs);p(14,2,bs);p(15,2,bs);p(15,1,"#fff");}
+  if(t.antenna===2){p(10,3,bs);p(10,2,bs);p(9,1,bs);p(13,3,bs);p(13,2,bs);p(14,1,bs);}
+  if(t.antenna===3){p(10,3,bs);p(10,2,bs);p(10,1,bs);p(10,0,"#fff");p(13,3,bs);p(13,2,bs);p(13,1,bs);p(13,0,"#fff");}
+  if(t.accessory===2){row(9,14,3,"#ffd700");p(9,2,"#ffd700");p(11,1,"#ffd700");p(12,1,"#ffd700");p(14,2,"#ffd700");p(9,2,"#ff4500");p(12,1,"#ff4500");p(14,2,"#ff4500");}
+  if(t.body===6){p(6,9,"#ffd700");p(6,14,"#ffd700");p(6,18,"#ffd700");p(17,9,"#ffd700");p(17,14,"#ffd700");p(17,18,"#ffd700");row(9,14,7,"#ffd700");row(9,14,22,"#ffd700");}
+  return grid;
+}
+
+function drawPreview(seed) {
+  const canvas = document.getElementById("preview-canvas");
+  const ctx    = canvas.getContext("2d");
+  const W = canvas.width, GRID = 24;
+  const cell = Math.floor(W / GRID);
+  const t    = getTraits(seed);
+  ctx.fillStyle = BG_COLOR[t.bg];
+  ctx.fillRect(0, 0, W, W);
+  const pixels = buildPixels(t);
+  for (let r = 0; r < GRID; r++) {
+    for (let c = 0; c < GRID; c++) {
+      const color = pixels[r][c];
+      if (color) { ctx.fillStyle = color; ctx.fillRect(c * cell, r * cell, cell, cell); }
+    }
+  }
+
+  // Trait chips
+  const traits = [
+    ["BG", BG_NAMES[t.bg]], ["BODY", BODY_NAMES[t.body]],
+    ["ANT", ANT_NAMES[t.antenna]], ["EYES", EYE_NAMES[t.eyes]],
+    ["LEGS", LEG_NAMES[t.legs]], ["SHELL", SHELL_NAMES[t.shell]],
+    ["ACC", ACC_NAMES[t.accessory]],
+  ];
+  const tc = document.getElementById("mint-traits");
+  tc.innerHTML = traits.map(([label, val]) =>
+    `<div class="trait-chip ${RARE_TRAITS.includes(val) ? "rare" : ""}">
+      <span style="font-size:8px;color:var(--muted);display:block">${label}</span>${val}
+    </div>`
+  ).join("");
+}
+
+// ═══════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════
+function setLandingStatus(msg, type) {
+  const el = document.getElementById("landing-status");
+  el.textContent = msg;
+  el.className = "mint-status " + type;
+}
+
+// ═══════════════════════════════════════════════════════════
+// BACKGROUND GRID — random flickering roaches
+// ═══════════════════════════════════════════════════════════
+(function initBg() {
+  const canvas = document.getElementById("bg-canvas");
+  const ctx    = canvas.getContext("2d");
+  const CELL   = 48;
+  const GRID   = 24;
+  const PIX    = 2; // 2px per pixel cell
+
+  let cols, rows, cells = [];
+
+  function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    cols = Math.ceil(canvas.width  / CELL) + 1;
+    rows = Math.ceil(canvas.height / CELL) + 1;
+    cells = [];
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        cells.push({
+          x: c * CELL, y: r * CELL,
+          seed: 1 + Math.floor(Math.random() * 6969),
+          opacity: 0.4 + Math.random() * 0.4,
+        });
+      }
+    }
+    drawAll();
+  }
+
+  function drawRoach(x, y, seed, opacity) {
+    const t      = getTraits(seed);
+    const pixels = buildPixels(t);
+    ctx.globalAlpha = opacity;
+    for (let pr = 0; pr < GRID; pr++) {
+      for (let pc = 0; pc < GRID; pc++) {
+        const color = pixels[pr][pc];
+        if (color) {
+          ctx.fillStyle = color;
+          ctx.fillRect(x + pc * PIX, y + pr * PIX, PIX, PIX);
+        }
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawAll() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (const cell of cells) drawRoach(cell.x, cell.y, cell.seed, cell.opacity);
+  }
+
+  // Flicker: swap ~5% of cells every 4 seconds — no rAF needed
+  function flicker() {
+    const count = Math.max(1, Math.floor(cells.length * 0.05));
+    for (let i = 0; i < count; i++) {
+      const cell = cells[Math.floor(Math.random() * cells.length)];
+      // Clear old roach
+      ctx.clearRect(cell.x, cell.y, CELL, CELL);
+      // New seed + opacity
+      cell.seed    = 1 + Math.floor(Math.random() * 6969);
+      cell.opacity = 0.3 + Math.random() * 0.5;
+      drawRoach(cell.x, cell.y, cell.seed, cell.opacity);
+    }
+  }
+
+  window.addEventListener("resize", () => { resize(); });
+  resize();
+  setInterval(flicker, 4000);
+})();
+
+// ── INIT — load stats immediately without wallet ──
+refreshStats().catch(()=>{});
+
+// ── LANDING ROACH PREVIEW — random, flickers every 4s ──
+(function initLandingRoach() {
+  const canvas = document.getElementById("landing-roach");
+  if (!canvas) return;
+  const CELL = 5; // 5px per pixel = 120px canvas / 24
+  function draw() {
+    const seed = 1 + Math.floor(Math.random() * 6969);
+    const t    = getTraits(seed);
+    const ctx  = canvas.getContext("2d");
+    ctx.fillStyle = BG_COLOR[t.bg];
+    ctx.fillRect(0, 0, 120, 120);
+    const pixels = buildPixels(t);
+    for (let r = 0; r < 24; r++) {
+      for (let c = 0; c < 24; c++) {
+        const color = pixels[r][c];
+        if (color) { ctx.fillStyle = color; ctx.fillRect(c*CELL, r*CELL, CELL, CELL); }
+      }
+    }
+  }
+  draw();
+  setInterval(draw, 4000);
+})();
+</script>
+</body>
+</html>
