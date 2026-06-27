@@ -389,10 +389,7 @@ body {
       <div class="block-bar-diff" id="diff-label">DIFFICULTY: EASY · 0% MINTED</div>
     </div>
 
-    <div style="display:flex;flex-direction:column;gap:10px;width:100%;max-width:480px">
-      <button class="btn btn-primary" style="padding:16px;font-size:11px;letter-spacing:3px" onclick="goToChoose('free')">MINT FREE</button>
-      <button class="btn btn-secondary" style="padding:16px;font-size:11px;letter-spacing:3px" id="hero-paid-btn" onclick="goToChoose('paid')">MINT NOW — <span id="hero-price">...</span> ETH</button>
-    </div>
+    <button class="btn btn-primary" style="padding:18px 32px;font-size:12px;letter-spacing:4px;max-width:480px;width:100%" onclick="goToChoose()">MINT A ROACH</button>
 
     <div id="landing-status" class="mint-status"></div>
   </div>
@@ -835,7 +832,7 @@ function goToLanding() {
   refreshStats();
 }
 
-function goToChoose(highlight) {
+function goToChoose() {
   if (!walletAddress) { connectWallet(); return; }
   showScreen("screen-choose");
   // Sync wallet btn on choose screen
@@ -849,10 +846,6 @@ function goToChoose(highlight) {
   const cc = document.getElementById("choose-roach");
   if (cc) drawPreviewOnCanvas(cc, seed, 4);
   refreshStats();
-  // Scroll to relevant card
-  if (highlight === "paid") {
-    setTimeout(() => document.getElementById("btn-paid")?.scrollIntoView({behavior:"smooth", block:"center"}), 200);
-  }
 }
 
 function drawPreviewOnCanvas(canvas, seed, cellSize) {
