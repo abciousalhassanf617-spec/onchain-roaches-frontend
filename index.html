@@ -410,11 +410,12 @@ body {
   <div class="choose-body">
     <canvas id="choose-roach" class="choose-roach" width="96" height="96"></canvas>
 
-    <div class="choose-stats">
-      <div class="block-bar-row">
-        <span class="block-bar-blocks" id="choose-blocks">░░░░░░░░░░░░░░░░░░░░</span>
-        <span class="block-bar-count"><span id="choose-minted">0</span> / <span id="choose-total">6969</span></span>
+    <div class="choose-stats" style="text-align:center">
+      <div style="display:flex;align-items:center;justify-content:center;gap:10px">
+        <span style="color:var(--accent2);letter-spacing:2px;font-size:12px" id="choose-blocks">░░░░░░░░░░░░░░░░░░░░</span>
+        <span style="font-size:9px;color:var(--sub);white-space:nowrap"><span id="choose-minted">0</span> / <span id="choose-total">6969</span></span>
       </div>
+      <div style="font-size:9px;letter-spacing:2px;color:var(--sub);margin-top:4px" id="choose-pct">0% MINTED</div>
     </div>
 
     <div class="choose-cards">
@@ -435,7 +436,7 @@ body {
       <!-- PAID -->
       <div class="choose-card">
         <div class="choose-card-header">
-          <div class="choose-card-title">PAID MINT</div>
+          <div class="choose-card-title">ALMOST FREE</div>
           <div class="choose-card-tag paid-tag">ALMOST FREE</div>
         </div>
         <div class="choose-card-desc">No game required. Mint instantly.</div>
@@ -593,22 +594,27 @@ let gameSig     = null;
 // Try multiple RPCs with fallback
 async function initReadContract() {
   const rpcs = [
-    "https://rpc.sepolia.org",
     "https://sepolia.drpc.org",
+    "https://rpc2.sepolia.org",
+    "https://rpc.sepolia.org",
     "https://ethereum-sepolia-rpc.publicnode.com",
   ];
   for (const rpc of rpcs) {
     try {
       const p = new ethers.JsonRpcProvider(rpc);
-      await p.getBlockNumber(); // test it works
+      const block = await Promise.race([
+        p.getBlockNumber(),
+        new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 3000))
+      ]);
       readContract = new ethers.Contract(CONTRACT_ADDRESS, ABI, p);
-      console.log("RPC connected:", rpc);
+      console.log("RPC ok:", rpc, "block:", block);
+      await refreshStats();
       return;
-    } catch(e) { console.warn("RPC failed:", rpc); }
+    } catch(e) { console.warn("RPC failed:", rpc, e.message); }
   }
-  console.error("All RPCs failed");
+  console.error("All RPCs failed — stats will load after wallet connect");
 }
-initReadContract().then(() => refreshStats().catch(()=>{}));
+initReadContract();
 
 // Difficulty from contract state
 const DIFFICULTY = [
@@ -755,6 +761,8 @@ async function refreshStats() {
     if (cm) cm.textContent = minted;
     if (ct) ct.textContent = total;
     if (cb) cb.textContent = "█".repeat(Math.round(minted/total*20)) + "░".repeat(20 - Math.round(minted/total*20));
+    const cp = document.getElementById("choose-pct");
+    if (cp) cp.textContent = pct + "% MINTED";
     // Sync hero bar
     const hm2 = document.getElementById("hdr-minted2");
     const ht2 = document.getElementById("hdr-total2");
