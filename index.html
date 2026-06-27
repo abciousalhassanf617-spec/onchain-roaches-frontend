@@ -646,6 +646,9 @@ function renderDefaults() {
 renderDefaults();
 initReadContract();
 
+// Auto-refresh stats every 30 seconds
+setInterval(() => { refreshStats(); }, 30000);
+
 // Difficulty from contract state
 const DIFFICULTY = [
   { maxPct: 25,  rounds: 5, lives: 3, speed: 600 },
