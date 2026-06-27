@@ -594,11 +594,11 @@ let gameSig     = null;
 // Try multiple RPCs with fallback
 async function initReadContract() {
   const rpcs = [
-    "https://ethereum-sepolia-rpc.publicnode.com",
+    "https://rpc.ankr.com/eth_sepolia",
+    "https://sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161",
+    "https://eth-sepolia.g.alchemy.com/v2/demo",
     "https://sepolia.drpc.org",
-    "https://rpc2.sepolia.org",
-    "https://rpc.sepolia.org",
-    "https://sepolia.gateway.tenderly.co",
+    "https://ethereum-sepolia-rpc.publicnode.com",
   ];
   setLandingStatus("Connecting to network...", "");
   for (const rpc of rpcs) {
@@ -649,8 +649,13 @@ function renderDefaults() {
   setEl("paid-blocks",  blocks);
   setEl("choose-blocks",blocks);
 }
-renderDefaults();
-initReadContract();
+// Wait for DOM before painting defaults and starting RPC
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", () => { renderDefaults(); initReadContract(); });
+} else {
+  renderDefaults();
+  initReadContract();
+}
 
 // Auto-refresh stats every 30 seconds
 setInterval(() => { refreshStats(); }, 30000);
