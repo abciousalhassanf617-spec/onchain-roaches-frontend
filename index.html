@@ -381,12 +381,12 @@ body {
 
     <canvas id="landing-roach" width="160" height="160" style="image-rendering:pixelated;image-rendering:crisp-edges;border:1px solid var(--border);"></canvas>
 
-    <div class="block-bar-wrap">
-      <div class="block-bar-row">
-        <span class="block-bar-blocks" id="free-blocks">░░░░░░░░░░░░░░░░░░░░</span>
-        <span class="block-bar-count"><span id="hdr-minted2">0</span> / <span id="hdr-total2">6969</span> MINTED</span>
+    <div class="block-bar-wrap" style="width:100%;max-width:480px">
+      <div style="display:flex;align-items:center;justify-content:center;gap:10px;font-size:10px;letter-spacing:1px">
+        <span style="color:var(--accent2);letter-spacing:2px;font-size:13px" id="free-blocks">░░░░░░░░░░░░░░░░░░░░</span>
+        <span style="color:var(--sub);white-space:nowrap"><span id="hdr-minted2">0</span>/<span id="hdr-total2">6969</span></span>
       </div>
-      <div class="block-bar-diff" id="diff-label">DIFFICULTY: EASY · 0% MINTED</div>
+      <div style="text-align:center;font-size:9px;letter-spacing:2px;color:var(--sub);margin-top:4px" id="diff-label">0% MINTED</div>
     </div>
 
     <button class="btn btn-primary" style="padding:18px 32px;font-size:12px;letter-spacing:4px;max-width:480px;width:100%" onclick="goToChoose()">MINT A ROACH</button>
@@ -590,11 +590,25 @@ let gameSig     = null;
 
 // Read-only provider — loads stats before wallet connect
 // Using publicnode — reliable, no key needed
-const RPC_URL = "https://ethereum-sepolia-rpc.publicnode.com";
-try {
-  const readProvider = new ethers.JsonRpcProvider(RPC_URL);
-  readContract = new ethers.Contract(CONTRACT_ADDRESS, ABI, readProvider);
-} catch(e) { console.error("readContract init failed:", e); }
+// Try multiple RPCs with fallback
+async function initReadContract() {
+  const rpcs = [
+    "https://rpc.sepolia.org",
+    "https://sepolia.drpc.org",
+    "https://ethereum-sepolia-rpc.publicnode.com",
+  ];
+  for (const rpc of rpcs) {
+    try {
+      const p = new ethers.JsonRpcProvider(rpc);
+      await p.getBlockNumber(); // test it works
+      readContract = new ethers.Contract(CONTRACT_ADDRESS, ABI, p);
+      console.log("RPC connected:", rpc);
+      return;
+    } catch(e) { console.warn("RPC failed:", rpc); }
+  }
+  console.error("All RPCs failed");
+}
+initReadContract().then(() => refreshStats().catch(()=>{}));
 
 // Difficulty from contract state
 const DIFFICULTY = [
@@ -728,7 +742,7 @@ async function refreshStats() {
       "█".repeat(paidBlocks) + "░".repeat(BLOCKS - paidBlocks);
 
     const tierLabel = pct < 25 ? "EASY" : pct < 50 ? "MEDIUM" : pct < 75 ? "HARD" : pct < 90 ? "BRUTAL" : "NO MERCY";
-    document.getElementById("diff-label").textContent = `DIFFICULTY: ${tierLabel} · ${pct}% MINTED`;
+    document.getElementById("diff-label").textContent = pct + "% MINTED";
     const badge = document.getElementById("diff-badge");
     if (badge) badge.textContent = tierLabel;
     document.getElementById("paid-price-label").textContent = paidPrice + " ETH";
@@ -1469,8 +1483,7 @@ function setLandingStatus(msg, type) {
   setInterval(flicker, 4000);
 })();
 
-// ── INIT — load stats immediately without wallet ──
-refreshStats().catch(()=>{});
+// ── INIT ── (stats loaded after RPC init above)
 
 // ── LANDING ROACH PREVIEW — random, flickers every 4s ──
 (function initLandingRoach() {
