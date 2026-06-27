@@ -847,8 +847,9 @@ async function refreshStats() {
 
     // Check wallet free mint status
     if (walletAddress) {
-      const freeCount = await c.freeMintCount(walletAddress);
-      const paidCount = await c.paidMintCount(walletAddress);
+      let freeCount = 0, paidCount = 0;
+      try { freeCount = await c.freeMintCount(walletAddress); } catch(e) { console.warn("freeMintCount failed:", e.message); }
+      try { paidCount = await c.paidMintCount(walletAddress); } catch(e) { console.warn("paidMintCount failed:", e.message); }
       paidAlreadyMinted = Number(paidCount);
       const usedFree    = Number(freeCount) >= maxFreePerWallet;
       const remaining   = maxPaidPerWallet - paidAlreadyMinted;
@@ -971,7 +972,8 @@ async function startFreeMint() {
   const c = contract || readContract;
   if (!c) { setLandingStatus("Still connecting to network. Try again in a moment.", "err"); return; }
 
-  const open = await c.mintingOpen();
+  let open = true;
+  try { open = await c.mintingOpen(); } catch(e) { console.warn("mintingOpen() unavailable, assuming open:", e.message); }
   if (!open) { setLandingStatus("Minting is not open yet.", "err"); return; }
 
   const count = await c.freeMintCount(walletAddress);
@@ -1023,7 +1025,8 @@ async function startPaidMint() {
   const c = contract || readContract;
   if (!c) { setLandingStatus("Still connecting to network. Try again in a moment.", "err"); return; }
 
-  const open = await c.mintingOpen();
+  let open = true;
+  try { open = await c.mintingOpen(); } catch(e) { console.warn("mintingOpen() unavailable, assuming open:", e.message); }
   if (!open) { setLandingStatus("Minting is not open yet.", "err"); return; }
 
   const count = await c.paidMintCount(walletAddress);
