@@ -1273,12 +1273,28 @@ async function showMintScreen() {
       nextId = Number(fs) + Number(pm) + 1;
     }
 
-    document.getElementById("mint-token-label").textContent = `ONCHAIN ROACH #${nextId}`;
+    const endId = mintMode === "paid" && paidAmount > 1 ? nextId + paidAmount - 1 : nextId;
+    const tokenLabel = mintMode === "paid" && paidAmount > 1
+      ? `ONCHAIN ROACH #${nextId} – #${endId}`
+      : `ONCHAIN ROACH #${nextId}`;
+    document.getElementById("mint-token-label").textContent = tokenLabel;
     drawPreview(nextId);
+    if (mintMode === "paid" && paidAmount > 1) {
+      const canvas = document.getElementById("preview-canvas");
+      if (canvas) {
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "rgba(0,0,0,0.55)";
+        ctx.fillRect(0, canvas.height - 36, canvas.width, 36);
+        ctx.fillStyle = "#c8a97e";
+        ctx.font = "bold 14px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText(`+ ${paidAmount - 1} MORE ROACH${paidAmount > 2 ? "ES" : ""}`, canvas.width / 2, canvas.height - 12);
+      }
+    }
 
     const label = mintMode === "free"
       ? "FREE MINT. Sign to confirm."
-      : `PAID MINT. ${(paidPrice * paidAmount).toFixed(4)} ETH`;
+      : `PAID MINT. ${paidAmount} roach${paidAmount > 1 ? "es" : ""} · ${(paidPrice * paidAmount).toFixed(4)} ETH`;
     setMintStatus(label, "");
   } catch(e) {
     setMintStatus("Preview failed: " + e.message, "err");
@@ -1319,7 +1335,12 @@ async function confirmMint() {
       ? Number(await (contract || readContract).freeMinted())
       : Number(await (contract || readContract).freeSupply()) + Number(await (contract || readContract).paidMinted());
 
-    setMintStatus("✓ MINTED. Token #" + tokenId + " is yours.", "ok");
+    const lastId = tokenId;
+    const firstId = mintMode === "paid" && paidAmount > 1 ? lastId - paidAmount + 1 : lastId;
+    const successMsg = mintMode === "paid" && paidAmount > 1
+      ? `✓ MINTED. Tokens #${firstId}–#${lastId} are yours.`
+      : `✓ MINTED. Token #${lastId} is yours.`;
+    setMintStatus(successMsg, "ok");
     btn.textContent = "MINTED ✓";
 
     // Reset game sig
