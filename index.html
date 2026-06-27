@@ -481,7 +481,7 @@ body {
 // ═══════════════════════════════════════════════════════════
 // CONFIG
 // ═══════════════════════════════════════════════════════════
-const CONTRACT_ADDRESS = "0x4e2C1021b0936254A14A219c037d703A83E2CB84";
+const CONTRACT_ADDRESS = "0x5fAA44501f60Bd35843f4D04764DF9A7B0a53B05";
 const BACKEND_URL      = "https://onchain-roach-server-production.up.railway.app";
 const CHAIN_ID         = 11155111; // Sepolia
 
@@ -1249,13 +1249,31 @@ function setLandingStatus(msg, type) {
 // BACKGROUND GRID — random flickering roaches
 // ═══════════════════════════════════════════════════════════
 (function initBg() {
-  const canvas = document.getElementById("bg-canvas");
-  const ctx    = canvas.getContext("2d");
-  const CELL   = 48;
-  const GRID   = 24;
-  const PIX    = 2; // 2px per pixel cell
+  const canvas   = document.getElementById("bg-canvas");
+  const ctx      = canvas.getContext("2d");
+  const isMobile = window.innerWidth < 600;
+  const CELL     = isMobile ? 96 : 48;
+  const GRID     = 24;
+  const PIX      = 2;
 
   let cols, rows, cells = [];
+
+  function renderToOffscreen(seed, opacity) {
+    const oc   = document.createElement("canvas");
+    oc.width   = GRID * PIX;
+    oc.height  = GRID * PIX;
+    const octx = oc.getContext("2d");
+    const t    = getTraits(seed);
+    const px   = buildPixels(t);
+    octx.globalAlpha = opacity;
+    for (let r = 0; r < GRID; r++) {
+      for (let c = 0; c < GRID; c++) {
+        const color = px[r][c];
+        if (color) { octx.fillStyle = color; octx.fillRect(c*PIX, r*PIX, PIX, PIX); }
+      }
+    }
+    return oc;
+  }
 
   function resize() {
     canvas.width  = window.innerWidth;
@@ -1265,53 +1283,33 @@ function setLandingStatus(msg, type) {
     cells = [];
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
-        cells.push({
-          x: c * CELL, y: r * CELL,
-          seed: 1 + Math.floor(Math.random() * 6969),
-          opacity: 0.4 + Math.random() * 0.4,
-        });
+        const seed    = 1 + Math.floor(Math.random() * 6969);
+        const opacity = 0.3 + Math.random() * 0.3;
+        cells.push({ x: c*CELL, y: r*CELL, seed, opacity, canvas: renderToOffscreen(seed, opacity) });
       }
     }
     drawAll();
   }
 
-  function drawRoach(x, y, seed, opacity) {
-    const t      = getTraits(seed);
-    const pixels = buildPixels(t);
-    ctx.globalAlpha = opacity;
-    for (let pr = 0; pr < GRID; pr++) {
-      for (let pc = 0; pc < GRID; pc++) {
-        const color = pixels[pr][pc];
-        if (color) {
-          ctx.fillStyle = color;
-          ctx.fillRect(x + pc * PIX, y + pr * PIX, PIX, PIX);
-        }
-      }
-    }
-    ctx.globalAlpha = 1;
-  }
-
   function drawAll() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    for (const cell of cells) drawRoach(cell.x, cell.y, cell.seed, cell.opacity);
+    for (const cell of cells) ctx.drawImage(cell.canvas, cell.x, cell.y);
   }
 
-  // Flicker: swap ~5% of cells every 4 seconds — no rAF needed
   function flicker() {
-    const count = Math.max(1, Math.floor(cells.length * 0.05));
+    const count = Math.max(1, Math.floor(cells.length * 0.04));
     for (let i = 0; i < count; i++) {
-      const cell = cells[Math.floor(Math.random() * cells.length)];
-      // Clear old roach
-      ctx.clearRect(cell.x, cell.y, CELL, CELL);
-      // New seed + opacity
+      const cell   = cells[Math.floor(Math.random() * cells.length)];
       cell.seed    = 1 + Math.floor(Math.random() * 6969);
-      cell.opacity = 0.3 + Math.random() * 0.5;
-      drawRoach(cell.x, cell.y, cell.seed, cell.opacity);
+      cell.opacity = 0.2 + Math.random() * 0.4;
+      cell.canvas  = renderToOffscreen(cell.seed, cell.opacity);
+      ctx.clearRect(cell.x, cell.y, CELL, CELL);
+      ctx.drawImage(cell.canvas, cell.x, cell.y);
     }
   }
 
-  window.addEventListener("resize", () => { resize(); });
-  resize();
+  window.addEventListener("resize", resize);
+  setTimeout(resize, 200);
   setInterval(flicker, 4000);
 })();
 
