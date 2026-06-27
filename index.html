@@ -617,6 +617,33 @@ async function initReadContract() {
   setLandingStatus("Network unavailable. Connect wallet to load stats.", "err");
   console.error("All RPCs failed — stats will load after wallet connect");
 }
+// Paint hardcoded defaults to DOM immediately so UI is never blank
+function renderDefaults() {
+  const TOTAL = 6969;
+  const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  setEl("hdr-minted",        "0");
+  setEl("hdr-total",         TOTAL);
+  setEl("hdr-minted-choose", "0");
+  setEl("hdr-total-choose",  TOTAL);
+  setEl("hdr-minted2",       "0");
+  setEl("hdr-total2",        TOTAL);
+  setEl("choose-minted",     "0");
+  setEl("choose-total",      TOTAL);
+  setEl("choose-pct",        "0% MINTED");
+  setEl("diff-label",        "0% MINTED");
+  setEl("paid-price-label",  paidPrice + " ETH");
+  setEl("amount-display",    paidAmount);
+  setEl("amount-total",      "TOTAL: " + (paidPrice * paidAmount).toFixed(4) + " ETH");
+  setEl("paid-remaining",    maxPaidPerWallet + " remaining");
+  setEl("choose-diff-badge", "EASY");
+  setEl("choose-game-detail","5 rounds · 3 lives · 600ms");
+  setEl("diff-badge",        "EASY");
+  const blocks = "░".repeat(20);
+  setEl("free-blocks",  blocks);
+  setEl("paid-blocks",  blocks);
+  setEl("choose-blocks",blocks);
+}
+renderDefaults();
 initReadContract();
 
 // Difficulty from contract state
