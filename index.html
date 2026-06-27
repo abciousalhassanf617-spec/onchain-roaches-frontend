@@ -88,9 +88,56 @@ body {
 .landing-body {
   flex: 1; display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  padding: clamp(32px, 6vw, 60px) clamp(16px, 4vw, 32px);
-  gap: clamp(24px, 5vw, 40px); text-align: center;
+  padding: clamp(24px, 5vw, 48px) clamp(16px, 4vw, 28px);
+  gap: clamp(20px, 4vw, 32px); text-align: center;
 }
+
+/* ── CHOOSE SCREEN ── */
+.choose-body {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; padding: 20px 16px;
+  gap: 16px; overflow-y: auto;
+}
+.choose-stats {
+  width: 100%; max-width: 480px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.choose-roach {
+  image-rendering: pixelated; image-rendering: crisp-edges;
+  border: 1px solid var(--border);
+}
+.choose-cards {
+  display: flex; flex-direction: column; gap: 12px;
+  width: 100%; max-width: 480px;
+}
+.choose-card {
+  border: 1px solid var(--border);
+  background: var(--card);
+  backdrop-filter: blur(16px);
+  padding: 20px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.choose-card-header {
+  display: flex; justify-content: space-between; align-items: center;
+}
+.choose-card-title {
+  font-family: var(--display); font-size: clamp(14px, 4vw, 18px);
+  font-weight: 700; color: var(--white);
+}
+.choose-card-tag {
+  font-size: 9px; letter-spacing: 2px; font-weight: 700;
+  padding: 4px 10px; border: 1px solid var(--accent2); color: var(--accent2);
+}
+.choose-card-tag.paid-tag {
+  border-color: var(--sub); color: var(--sub);
+}
+.choose-card-desc { font-size: 10px; color: var(--sub); line-height: 1.6; }
+.choose-card-meta {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 10px; letter-spacing: 1px;
+}
+.choose-card-price { font-size: 16px; font-weight: 700; color: var(--accent2); }
+.choose-card-detail { font-size: 9px; color: var(--sub); letter-spacing: 1px; }
 
 .hero-title {
   font-family: var(--display);
@@ -332,57 +379,84 @@ body {
     <div class="hero-title"><span class="line1">ONCHAIN</span><span class="line2">ROACHES</span></div>
     <div class="hero-sub">6969 · FULLY ONCHAIN · 24×24 PIXEL ART · ETHEREUM</div>
 
-    <!-- Random roach preview -->
-    <canvas id="landing-roach" width="120" height="120" style="image-rendering:pixelated;image-rendering:crisp-edges;border:1px solid var(--border);"></canvas>
+    <canvas id="landing-roach" width="160" height="160" style="image-rendering:pixelated;image-rendering:crisp-edges;border:1px solid var(--border);"></canvas>
 
-    <!-- Block bar -->
     <div class="block-bar-wrap">
       <div class="block-bar-row">
-        <span class="block-bar-label">FREE</span>
         <span class="block-bar-blocks" id="free-blocks">░░░░░░░░░░░░░░░░░░░░</span>
-        <span class="block-bar-count"><span id="free-minted">0</span>/<span id="free-supply">3484</span></span>
+        <span class="block-bar-count"><span id="hdr-minted2">0</span> / <span id="hdr-total2">6969</span> MINTED</span>
       </div>
-      <div class="block-bar-row">
-        <span class="block-bar-label">PAID</span>
-        <span class="block-bar-blocks" id="paid-blocks">░░░░░░░░░░░░░░░░░░░░</span>
-        <span class="block-bar-count"><span id="paid-minted">0</span>/<span id="paid-supply">3485</span></span>
-      </div>
-      <div class="block-bar-diff" id="diff-label">DIFFICULTY: EASY &nbsp;·&nbsp; 0% MINTED</div>
+      <div class="block-bar-diff" id="diff-label">DIFFICULTY: EASY · 0% MINTED</div>
     </div>
 
-    <div class="mint-cards">
-      <!-- FREE MINT CARD -->
-      <div class="mint-card">
-        <div class="mint-card-label">PATH 01</div>
-        <div class="mint-card-title">FREE MINT</div>
-        <div class="mint-card-desc">Pass the Simon sequence game. One per wallet.</div>
-        <div class="mint-card-row">
-          <div class="mint-card-price">FREE</div>
-          <div class="diff-badge" id="diff-badge">EASY</div>
+    <div style="display:flex;flex-direction:column;gap:10px;width:100%;max-width:480px">
+      <button class="btn btn-primary" style="padding:16px;font-size:11px;letter-spacing:3px" onclick="goToChoose('free')">MINT FREE</button>
+      <button class="btn btn-secondary" style="padding:16px;font-size:11px;letter-spacing:3px" id="hero-paid-btn" onclick="goToChoose('paid')">MINT NOW — <span id="hero-price">...</span> ETH</button>
+    </div>
+
+    <div id="landing-status" class="mint-status"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SCREEN 1.2: CHOOSE PATH                        -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="screen" id="screen-choose">
+  <div class="header">
+    <div class="logo">ONCHAIN ROACHES</div>
+    <div class="header-right">
+      <div class="stat-pill">MINTED <span id="hdr-minted">0</span> / <span id="hdr-total">6969</span></div>
+      <button class="wallet-btn connected" id="wallet-btn2" onclick="connectWallet()">CONNECT</button>
+    </div>
+  </div>
+
+  <div class="choose-body">
+    <canvas id="choose-roach" class="choose-roach" width="96" height="96"></canvas>
+
+    <div class="choose-stats">
+      <div class="block-bar-row">
+        <span class="block-bar-blocks" id="choose-blocks">░░░░░░░░░░░░░░░░░░░░</span>
+        <span class="block-bar-count"><span id="choose-minted">0</span> / <span id="choose-total">6969</span></span>
+      </div>
+    </div>
+
+    <div class="choose-cards">
+      <!-- FREE -->
+      <div class="choose-card">
+        <div class="choose-card-header">
+          <div class="choose-card-title">FREE MINT</div>
+          <div class="choose-card-tag" id="choose-diff-badge">EASY</div>
+        </div>
+        <div class="choose-card-desc">Pass the Simon sequence game. One per wallet.</div>
+        <div class="choose-card-meta">
+          <div class="choose-card-price">FREE</div>
+          <div class="choose-card-detail" id="choose-game-detail">5 rounds · 3 lives · 600ms</div>
         </div>
         <button class="btn btn-primary" id="btn-free" onclick="startFreeMint()">PLAY TO MINT</button>
       </div>
 
-      <!-- PAID MINT CARD -->
-      <div class="mint-card">
-        <div class="mint-card-label">PATH 02</div>
-        <div class="mint-card-title">PAID MINT</div>
-        <div class="mint-card-desc">No game required. Mint instantly.</div>
-        <div class="mint-card-row">
-          <div class="mint-card-price" id="paid-price-label">0.0069 ETH</div>
-          <div class="mint-remaining" id="paid-remaining">5 remaining</div>
+      <!-- PAID -->
+      <div class="choose-card">
+        <div class="choose-card-header">
+          <div class="choose-card-title">PAID MINT</div>
+          <div class="choose-card-tag paid-tag">ALMOST FREE</div>
+        </div>
+        <div class="choose-card-desc">No game required. Mint instantly.</div>
+        <div class="choose-card-meta">
+          <div class="choose-card-price" id="paid-price-label">... ETH</div>
+          <div class="mint-remaining" id="paid-remaining">... remaining</div>
         </div>
         <div class="amount-picker">
           <button class="amount-btn" onclick="changeAmount(-1)">−</button>
           <div class="amount-display" id="amount-display">1</div>
           <button class="amount-btn" onclick="changeAmount(1)">+</button>
-          <div class="amount-total" id="amount-total">TOTAL: 0.0069 ETH</div>
+          <div class="amount-total" id="amount-total">TOTAL: ...</div>
         </div>
         <button class="btn btn-secondary" id="btn-paid" onclick="startPaidMint()">MINT NOW</button>
       </div>
     </div>
 
-    <div id="landing-status" class="mint-status"></div>
+    <div id="choose-status" class="mint-status"></div>
   </div>
 </div>
 
@@ -470,8 +544,9 @@ body {
     <div class="tx-bar-wrap" id="tx-bar-wrap">
       <div class="tx-bar-track"><div class="tx-bar-fill" id="tx-bar-fill"></div></div>
     </div>
-    <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
+    <div style="display:flex;flex-direction:column;gap:10px;width:100%;max-width:360px">
       <button class="btn btn-primary" id="btn-confirm-mint" onclick="confirmMint()">CONFIRM MINT</button>
+      <button class="btn btn-secondary" id="btn-mint-more" onclick="mintMore()" style="display:none">MINT MORE</button>
       <button class="btn btn-outline" onclick="goToLanding()">CANCEL</button>
     </div>
   </div>
@@ -660,6 +735,27 @@ async function refreshStats() {
     const badge = document.getElementById("diff-badge");
     if (badge) badge.textContent = tierLabel;
     document.getElementById("paid-price-label").textContent = paidPrice + " ETH";
+    const heroPrice = document.getElementById("hero-price");
+    if (heroPrice) heroPrice.textContent = paidPrice;
+    // Sync choose screen supply
+    const cm = document.getElementById("choose-minted");
+    const ct = document.getElementById("choose-total");
+    const cb = document.getElementById("choose-blocks");
+    if (cm) cm.textContent = minted;
+    if (ct) ct.textContent = total;
+    if (cb) cb.textContent = "█".repeat(Math.round(minted/total*20)) + "░".repeat(20 - Math.round(minted/total*20));
+    // Sync hero bar
+    const hm2 = document.getElementById("hdr-minted2");
+    const ht2 = document.getElementById("hdr-total2");
+    const fb  = document.getElementById("free-blocks");
+    if (hm2) hm2.textContent = minted;
+    if (ht2) ht2.textContent = total;
+    if (fb)  fb.textContent  = "█".repeat(Math.round(minted/total*20)) + "░".repeat(20 - Math.round(minted/total*20));
+    // Sync choose diff badge
+    const cdb = document.getElementById("choose-diff-badge");
+    const cgd = document.getElementById("choose-game-detail");
+    if (cdb) cdb.textContent = tierLabel;
+    if (cgd) cgd.textContent = diff.rounds + " rounds · " + diff.lives + (diff.lives===1?" life":" lives") + " · " + diff.speed + "ms";
 
     // Check wallet free mint status
     if (walletAddress) {
@@ -737,6 +833,43 @@ function goToLanding() {
   stopGame();
   showScreen("screen-landing");
   refreshStats();
+}
+
+function goToChoose(highlight) {
+  if (!walletAddress) { connectWallet(); return; }
+  showScreen("screen-choose");
+  // Sync wallet btn on choose screen
+  const btn2 = document.getElementById("wallet-btn2");
+  if (btn2) {
+    btn2.textContent = walletAddress.slice(0,6) + "..." + walletAddress.slice(-4);
+    btn2.classList.add("connected");
+  }
+  // Draw roach preview
+  const seed = 1 + Math.floor(Math.random() * 6969);
+  const cc = document.getElementById("choose-roach");
+  if (cc) drawPreviewOnCanvas(cc, seed, 4);
+  refreshStats();
+  // Scroll to relevant card
+  if (highlight === "paid") {
+    setTimeout(() => document.getElementById("btn-paid")?.scrollIntoView({behavior:"smooth", block:"center"}), 200);
+  }
+}
+
+function drawPreviewOnCanvas(canvas, seed, cellSize) {
+  const ctx  = canvas.getContext("2d");
+  const W    = canvas.width;
+  const GRID = 24;
+  const cell = cellSize || Math.floor(W / GRID);
+  const t    = getTraits(seed);
+  ctx.fillStyle = BG_COLOR[t.bg];
+  ctx.fillRect(0, 0, W, W);
+  const pixels = buildPixels(t);
+  for (let r = 0; r < GRID; r++) {
+    for (let c = 0; c < GRID; c++) {
+      const color = pixels[r][c];
+      if (color) { ctx.fillStyle = color; ctx.fillRect(c*cell, r*cell, cell, cell); }
+    }
+  }
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1081,12 +1214,29 @@ async function confirmMint() {
 
     const receipt = await tx.wait();
     showTxBar(false);
-    setMintStatus("✓ MINTED! " + receipt.hash.slice(0,10) + "...", "ok");
+    const tokenId = mintMode === "free"
+      ? Number(await (contract || readContract).freeMinted())
+      : Number(await (contract || readContract).freeSupply()) + Number(await (contract || readContract).paidMinted());
+
+    setMintStatus("✓ MINTED. Token #" + tokenId + " is yours.", "ok");
     btn.textContent = "MINTED ✓";
 
     // Reset game sig
     gameSig = null;
     gameSession = null;
+
+    // Refresh stats immediately
+    await refreshStats();
+
+    // Show mint more button
+    const remaining = maxPaidPerWallet - paidAlreadyMinted;
+    const mintMoreBtn = document.getElementById("btn-mint-more");
+    if (mintMoreBtn) {
+      if (mintMode === "free" || remaining > 0) {
+        mintMoreBtn.style.display = "block";
+        mintMoreBtn.textContent   = remaining > 0 ? "MINT MORE (" + remaining + " remaining)" : "MINT MORE";
+      }
+    }
   } catch(e) {
     showTxBar(false);
     btn.disabled = false;
@@ -1125,6 +1275,19 @@ function setMintStatus(msg, type) {
   const el = document.getElementById("mint-status");
   el.textContent = msg;
   el.className = "mint-status " + type;
+}
+
+function mintMore() {
+  // Reset mint screen for another round
+  const btn = document.getElementById("btn-confirm-mint");
+  btn.disabled = false;
+  btn.textContent = "CONFIRM MINT";
+  document.getElementById("btn-mint-more").style.display = "none";
+  setMintStatus("", "");
+  // If free was used, go straight to paid
+  mintMode = "paid";
+  gameSig  = null;
+  showMintScreen();
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1320,20 +1483,9 @@ refreshStats().catch(()=>{});
 (function initLandingRoach() {
   const canvas = document.getElementById("landing-roach");
   if (!canvas) return;
-  const CELL = 5; // 5px per pixel = 120px canvas / 24
   function draw() {
     const seed = 1 + Math.floor(Math.random() * 6969);
-    const t    = getTraits(seed);
-    const ctx  = canvas.getContext("2d");
-    ctx.fillStyle = BG_COLOR[t.bg];
-    ctx.fillRect(0, 0, 120, 120);
-    const pixels = buildPixels(t);
-    for (let r = 0; r < 24; r++) {
-      for (let c = 0; c < 24; c++) {
-        const color = pixels[r][c];
-        if (color) { ctx.fillStyle = color; ctx.fillRect(c*CELL, r*CELL, CELL, CELL); }
-      }
-    }
+    drawPreviewOnCanvas(canvas, seed, Math.floor(canvas.width / 24));
   }
   draw();
   setInterval(draw, 4000);
