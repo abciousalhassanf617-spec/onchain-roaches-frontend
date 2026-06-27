@@ -402,7 +402,7 @@ body {
   <div class="header">
     <div class="logo">ONCHAIN ROACHES</div>
     <div class="header-right">
-      <div class="stat-pill">MINTED <span id="hdr-minted">0</span> / <span id="hdr-total">6969</span></div>
+      <div class="stat-pill">MINTED <span id="hdr-minted-choose">0</span> / <span id="hdr-total-choose">6969</span></div>
       <button class="wallet-btn connected" id="wallet-btn2" onclick="connectWallet()">CONNECT</button>
     </div>
   </div>
@@ -733,10 +733,19 @@ async function refreshStats() {
 
     document.getElementById("hdr-minted").textContent   = minted;
     document.getElementById("hdr-total").textContent    = total;
-    document.getElementById("free-minted").textContent  = Number(fm);
-    document.getElementById("free-supply").textContent  = Number(fs);
-    document.getElementById("paid-minted").textContent  = Number(pm);
-    document.getElementById("paid-supply").textContent  = Number(ps);
+    const elFreeMinted = document.getElementById("free-minted");
+    const elFreeSupply = document.getElementById("free-supply");
+    const elPaidMinted = document.getElementById("paid-minted");
+    const elPaidSupply = document.getElementById("paid-supply");
+    if (elFreeMinted) elFreeMinted.textContent = Number(fm);
+    if (elFreeSupply) elFreeSupply.textContent = Number(fs);
+    if (elPaidMinted) elPaidMinted.textContent = Number(pm);
+    if (elPaidSupply) elPaidSupply.textContent = Number(ps);
+    // Update choose-screen header (separate IDs to avoid duplicate)
+    const elChooseMinted = document.getElementById("hdr-minted-choose");
+    const elChooseTotal  = document.getElementById("hdr-total-choose");
+    if (elChooseMinted) elChooseMinted.textContent = minted;
+    if (elChooseTotal)  elChooseTotal.textContent  = total;
 
     // Block bar
     const BLOCKS = 20;
@@ -893,18 +902,21 @@ function drawPreviewOnCanvas(canvas, seed, cellSize) {
 async function startFreeMint() {
   if (!walletAddress) { connectWallet(); return; }
 
-  const open = await contract.mintingOpen();
+  const c = contract || readContract;
+  if (!c) { setLandingStatus("Still connecting to network. Try again in a moment.", "err"); return; }
+
+  const open = await c.mintingOpen();
   if (!open) { setLandingStatus("Minting is not open yet.", "err"); return; }
 
-  const count = await contract.freeMintCount(walletAddress);
+  const count = await c.freeMintCount(walletAddress);
   if (Number(count) >= maxFreePerWallet) {
     setLandingStatus("You've already used your free mint.", "err");
     return;
   }
 
   try {
-    const fm  = await contract.freeMinted();
-    const ts  = await contract.totalSupply();
+    const fm  = await c.freeMinted();
+    const ts  = await c.totalSupply();
     const pct = Math.round((Number(fm)) / Number(ts) * 100);
     const diff = getDifficulty(pct);
 
@@ -942,10 +954,13 @@ function launchGame() {
 async function startPaidMint() {
   if (!walletAddress) { connectWallet(); return; }
 
-  const open = await contract.mintingOpen();
+  const c = contract || readContract;
+  if (!c) { setLandingStatus("Still connecting to network. Try again in a moment.", "err"); return; }
+
+  const open = await c.mintingOpen();
   if (!open) { setLandingStatus("Minting is not open yet.", "err"); return; }
 
-  const count = await contract.paidMintCount(walletAddress);
+  const count = await c.paidMintCount(walletAddress);
   if (Number(count) + paidAmount > maxPaidPerWallet) {
     setLandingStatus(`You can only mint ${maxPaidPerWallet} paid total. Used: ${count}`, "err");
     return;
@@ -1177,13 +1192,15 @@ async function showMintScreen() {
 
   // Preview next token
   try {
+    const c = contract || readContract;
+    if (!c) { setMintStatus("Not connected to network.", "err"); return; }
     let nextId;
     if (mintMode === "free") {
-      const fm = await contract.freeMinted();
+      const fm = await c.freeMinted();
       nextId = Number(fm) + 1;
     } else {
-      const fs = await contract.freeSupply();
-      const pm = await contract.paidMinted();
+      const fs = await c.freeSupply();
+      const pm = await c.paidMinted();
       nextId = Number(fs) + Number(pm) + 1;
     }
 
