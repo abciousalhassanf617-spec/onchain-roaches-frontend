@@ -594,10 +594,11 @@ let gameSig     = null;
 // Try multiple RPCs with fallback
 async function initReadContract() {
   const rpcs = [
+    "https://ethereum-sepolia-rpc.publicnode.com",
     "https://sepolia.drpc.org",
     "https://rpc2.sepolia.org",
     "https://rpc.sepolia.org",
-    "https://ethereum-sepolia-rpc.publicnode.com",
+    "https://sepolia.gateway.tenderly.co",
   ];
   setLandingStatus("Connecting to network...", "");
   for (const rpc of rpcs) {
@@ -609,10 +610,15 @@ async function initReadContract() {
       ]);
       readContract = new ethers.Contract(CONTRACT_ADDRESS, ABI, p);
       console.log("RPC ok:", rpc, "block:", block);
+      // Test contract call — if this throws, try next RPC
+      await Promise.race([
+        readContract.totalSupply(),
+        new Promise((_, rej) => setTimeout(() => rej(new Error("contract timeout")), 8000))
+      ]);
       await refreshStats();
       setLandingStatus("", "");
       return;
-    } catch(e) { console.warn("RPC failed:", rpc, e.message); }
+    } catch(e) { console.warn("RPC failed:", rpc, e.message); readContract = null; }
   }
   setLandingStatus("Network unavailable. Connect wallet to load stats.", "err");
   console.error("All RPCs failed — stats will load after wallet connect");
@@ -861,7 +867,7 @@ async function refreshStats() {
     }
 
     updateAmountDisplay();
-  } catch(e) { console.error("refreshStats:", e); }
+  } catch(e) { console.error("refreshStats:", e); throw e; }
 }
 
 // ═══════════════════════════════════════════════════════════
