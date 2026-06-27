@@ -599,19 +599,22 @@ async function initReadContract() {
     "https://rpc.sepolia.org",
     "https://ethereum-sepolia-rpc.publicnode.com",
   ];
+  setLandingStatus("Connecting to network...", "");
   for (const rpc of rpcs) {
     try {
       const p = new ethers.JsonRpcProvider(rpc);
       const block = await Promise.race([
         p.getBlockNumber(),
-        new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 3000))
+        new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 8000))
       ]);
       readContract = new ethers.Contract(CONTRACT_ADDRESS, ABI, p);
       console.log("RPC ok:", rpc, "block:", block);
       await refreshStats();
+      setLandingStatus("", "");
       return;
     } catch(e) { console.warn("RPC failed:", rpc, e.message); }
   }
+  setLandingStatus("Network unavailable. Connect wallet to load stats.", "err");
   console.error("All RPCs failed — stats will load after wallet connect");
 }
 initReadContract();
