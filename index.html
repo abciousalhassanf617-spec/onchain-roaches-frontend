@@ -775,8 +775,10 @@ async function refreshStats() {
     maxPaidPerWallet = Number(maxPaid);
     maxFreePerWallet = Number(maxFree);
 
-    document.getElementById("hdr-minted").textContent   = minted;
-    document.getElementById("hdr-total").textContent    = total;
+    const elHdrMinted = document.getElementById("hdr-minted");
+    const elHdrTotal  = document.getElementById("hdr-total");
+    if (elHdrMinted) elHdrMinted.textContent = minted;
+    if (elHdrTotal)  elHdrTotal.textContent  = total;
     const elFreeMinted = document.getElementById("free-minted");
     const elFreeSupply = document.getElementById("free-supply");
     const elPaidMinted = document.getElementById("paid-minted");
@@ -795,16 +797,18 @@ async function refreshStats() {
     const BLOCKS = 20;
     const freeBlocks  = Math.round(Number(fm) / Number(fs) * BLOCKS);
     const paidBlocks  = Math.round(Number(pm) / Number(ps) * BLOCKS);
-    document.getElementById("free-blocks").textContent =
-      "█".repeat(freeBlocks) + "░".repeat(BLOCKS - freeBlocks);
-    document.getElementById("paid-blocks").textContent =
-      "█".repeat(paidBlocks) + "░".repeat(BLOCKS - paidBlocks);
+    const elFreeBlocks = document.getElementById("free-blocks");
+    const elPaidBlocks = document.getElementById("paid-blocks");
+    if (elFreeBlocks) elFreeBlocks.textContent = "█".repeat(freeBlocks) + "░".repeat(BLOCKS - freeBlocks);
+    if (elPaidBlocks) elPaidBlocks.textContent = "█".repeat(paidBlocks) + "░".repeat(BLOCKS - paidBlocks);
 
     const tierLabel = pct < 25 ? "EASY" : pct < 50 ? "MEDIUM" : pct < 75 ? "HARD" : pct < 90 ? "BRUTAL" : "NO MERCY";
-    document.getElementById("diff-label").textContent = pct + "% MINTED";
+    const elDiffLabel = document.getElementById("diff-label");
+    if (elDiffLabel) elDiffLabel.textContent = pct + "% MINTED";
     const badge = document.getElementById("diff-badge");
     if (badge) badge.textContent = tierLabel;
-    document.getElementById("paid-price-label").textContent = paidPrice + " ETH";
+    const elPaidPrice = document.getElementById("paid-price-label");
+    if (elPaidPrice) elPaidPrice.textContent = paidPrice + " ETH";
     const heroPrice = document.getElementById("hero-price");
     if (heroPrice) heroPrice.textContent = paidPrice;
     // Sync choose screen supply
@@ -843,27 +847,31 @@ async function refreshStats() {
       if (remaining <= 0) paidAmount = 0;
 
       const btnFree = document.getElementById("btn-free");
-      if (usedFree) {
-        btnFree.disabled = true;
-        btnFree.textContent = "FREE MINT USED";
-        btnFree.style.opacity = "0.4";
-        btnFree.style.cursor  = "not-allowed";
-      } else {
-        btnFree.disabled = false;
-        btnFree.textContent = "PLAY TO MINT";
-        btnFree.style.opacity = "1";
-        btnFree.style.cursor  = "pointer";
+      if (btnFree) {
+        if (usedFree) {
+          btnFree.disabled = true;
+          btnFree.textContent = "FREE MINT USED";
+          btnFree.style.opacity = "0.4";
+          btnFree.style.cursor  = "not-allowed";
+        } else {
+          btnFree.disabled = false;
+          btnFree.textContent = "PLAY TO MINT";
+          btnFree.style.opacity = "1";
+          btnFree.style.cursor  = "pointer";
+        }
       }
 
       const btnPaid = document.getElementById("btn-paid");
-      if (usedPaid) {
-        btnPaid.disabled = true;
-        btnPaid.textContent = "LIMIT REACHED";
-        btnPaid.style.opacity = "0.4";
-      } else {
-        btnPaid.disabled = false;
-        btnPaid.textContent = "MINT NOW";
-        btnPaid.style.opacity = "1";
+      if (btnPaid) {
+        if (usedPaid) {
+          btnPaid.disabled = true;
+          btnPaid.textContent = "LIMIT REACHED";
+          btnPaid.style.opacity = "0.4";
+        } else {
+          btnPaid.disabled = false;
+          btnPaid.textContent = "MINT NOW";
+          btnPaid.style.opacity = "1";
+        }
       }
 
       // Show remaining in card
@@ -886,8 +894,10 @@ function changeAmount(delta) {
 
 function updateAmountDisplay() {
   const remaining = maxPaidPerWallet - paidAlreadyMinted;
-  document.getElementById("amount-display").textContent = paidAmount;
-  document.getElementById("amount-total").textContent   = `TOTAL: ${(paidPrice * paidAmount).toFixed(4)} ETH`;
+  const elAmt = document.getElementById("amount-display");
+  const elTotal = document.getElementById("amount-total");
+  if (elAmt)   elAmt.textContent   = paidAmount;
+  if (elTotal) elTotal.textContent = `TOTAL: ${(paidPrice * paidAmount).toFixed(4)} ETH`;
   // Disable + if at limit
   const plusBtn = document.querySelector(".amount-btn:last-of-type");
   if (plusBtn) plusBtn.disabled = paidAmount >= remaining;
