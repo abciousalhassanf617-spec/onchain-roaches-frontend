@@ -636,11 +636,18 @@ function getDifficulty(pct) {
 // WALLET
 // ═══════════════════════════════════════════════════════════
 async function connectWallet() {
-  // Support window.ethereum (MetaMask, Zerion desktop)
-  // and window.zerionWallet / other injected providers (Zerion mobile)
-  const eth = window.ethereum || window.zerionWallet || window.coinbaseWalletExtension;
+  // Detect any injected EVM provider
+  // Covers MetaMask, Zerion, Rainbow, Trust, Coinbase, OKX, etc.
+  const eth = window.ethereum
+    || window.zerionWallet
+    || window.coinbaseWalletExtension
+    || window.trustWallet
+    || window.okxwallet
+    || window.rabby
+    || (window.ethereum?.providers?.[0]);
+
   if (!eth) {
-    showError("No wallet detected. Open this page inside your Zerion or MetaMask app.");
+    showError("Open this page inside your wallet app browser (Zerion, MetaMask, Rainbow, etc).");
     return;
   }
   try {
