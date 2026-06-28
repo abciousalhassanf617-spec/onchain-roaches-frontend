@@ -356,6 +356,50 @@ body {
 .game-intro-stat .stat-val { color: var(--white); font-weight: 700; }
 .game-intro-stat .stat-val.accent { color: var(--accent2); }
 
+/* ── COPY SECTION ── */
+.copy-section {
+  width: 100%; max-width: 480px;
+  display: flex; flex-direction: column; gap: 20px;
+  border-top: 1px solid var(--border); padding-top: 40px;
+  margin-top: 20px; text-align: left;
+}
+.copy-p {
+  font-size: clamp(11px, 3vw, 14px); line-height: 1.8;
+  color: var(--sub); letter-spacing: 1px;
+}
+.copy-big {
+  font-family: var(--display); font-size: clamp(28px, 8vw, 56px);
+  font-weight: 900; color: var(--white); letter-spacing: -1px;
+}
+.copy-and {
+  font-size: 10px; letter-spacing: 3px; color: var(--sub);
+}
+.copy-quote {
+  font-size: clamp(12px, 3.5vw, 16px); line-height: 2;
+  color: var(--white); letter-spacing: 1px;
+  border-left: 2px solid var(--accent2); padding-left: 20px;
+}
+
+/* ── SUCCESS SCREEN ── */
+.success-body {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 40px 24px; gap: 24px; text-align: center;
+}
+.success-title {
+  font-family: var(--display); font-size: clamp(48px, 14vw, 96px);
+  font-weight: 900; color: var(--white); line-height: 1;
+  letter-spacing: -3px;
+}
+.success-sub {
+  font-size: clamp(11px, 3vw, 14px); color: var(--sub);
+  letter-spacing: 2px; line-height: 1.8;
+}
+.success-tx {
+  font-size: 10px; color: var(--sub); letter-spacing: 1px;
+  font-family: var(--mono);
+}
+
 @media (max-width: 420px) {
   .header { padding: 12px 14px; }
   .stat-pill { display: none; }
@@ -384,17 +428,26 @@ body {
 
     <canvas id="landing-roach" width="160" height="160" style="image-rendering:pixelated;image-rendering:crisp-edges;border:1px solid var(--border);"></canvas>
 
-    <div class="block-bar-wrap" style="width:100%;max-width:480px">
-      <div style="display:flex;align-items:center;justify-content:center;gap:10px;font-size:10px;letter-spacing:1px">
-        <span style="color:var(--accent2);letter-spacing:2px;font-size:13px" id="free-blocks">░░░░░░░░░░░░░░░░░░░░</span>
-        <span style="color:var(--sub);white-space:nowrap"><span id="hdr-minted2">0</span>/<span id="hdr-total2">6969</span></span>
-      </div>
-      <div style="text-align:center;font-size:9px;letter-spacing:2px;color:var(--sub);margin-top:4px" id="diff-label">0% MINTED</div>
+    <div style="width:100%;max-width:480px;text-align:center">
+      <div style="font-family:var(--mono);letter-spacing:3px;font-size:clamp(10px,3vw,14px);color:var(--accent2)" id="supply-bar">░░░░░░░░░░░░░░░░░░░░</div>
+      <div style="font-size:9px;letter-spacing:2px;color:var(--sub);margin-top:6px" id="supply-count">0 / 6969 MINTED · 0%</div>
     </div>
 
     <button class="btn btn-primary" style="padding:18px 32px;font-size:12px;letter-spacing:4px;max-width:480px;width:100%" onclick="goToChoose()">MINT A ROACH</button>
 
     <div id="landing-status" class="mint-status"></div>
+
+    <!-- COPY SECTION -->
+    <div class="copy-section">
+      <p class="copy-p">ONCHAIN ROACHES isn't a collection.</p>
+      <p class="copy-p">It's a survivor story.</p>
+      <p class="copy-p">6,969 pixel roaches, drawn at mint,<br>living forever on Ethereum.</p>
+      <p class="copy-p">No roadmap.<br>No promises.<br>No bullshit.</p>
+      <p class="copy-p">Just roaches doing what roaches do.</p>
+      <p class="copy-p copy-big">Surviving.</p>
+      <p class="copy-p copy-and">And remember...</p>
+      <p class="copy-quote">"Surviving is winning, roaches.<br><br>Everything else is bullshit.<br><br>The world rewards survivors,<br>not dreamers.<br><br>Whatever it takes...<br><br>Survive, nymphs."</p>
+    </div>
   </div>
 </div>
 
@@ -413,12 +466,9 @@ body {
   <div class="choose-body">
     <canvas id="choose-roach" class="choose-roach" width="96" height="96"></canvas>
 
-    <div class="choose-stats" style="text-align:center">
-      <div style="display:flex;align-items:center;justify-content:center;gap:10px">
-        <span style="color:var(--accent2);letter-spacing:2px;font-size:12px" id="choose-blocks">░░░░░░░░░░░░░░░░░░░░</span>
-        <span style="font-size:9px;color:var(--sub);white-space:nowrap"><span id="choose-minted">0</span> / <span id="choose-total">6969</span></span>
-      </div>
-      <div style="font-size:9px;letter-spacing:2px;color:var(--sub);margin-top:4px" id="choose-pct">0% MINTED</div>
+    <div style="width:100%;max-width:480px;text-align:center">
+      <div style="font-family:var(--mono);letter-spacing:3px;font-size:13px;color:var(--accent2)" id="supply-bar-choose">░░░░░░░░░░░░░░░░░░░░</div>
+      <div style="font-size:9px;letter-spacing:2px;color:var(--sub);margin-top:4px" id="supply-count-choose">0 / 6969 MINTED · 0%</div>
     </div>
 
     <div class="choose-cards">
@@ -444,7 +494,7 @@ body {
         </div>
         <div class="choose-card-desc">No game required. Mint instantly.</div>
         <div class="choose-card-meta">
-          <div class="choose-card-price" id="paid-price-label">... ETH</div>
+          <div class="choose-card-price" id="paid-price-label">0.0003 ETH</div>
           <div class="mint-remaining" id="paid-remaining">... remaining</div>
         </div>
         <div class="amount-picker">
@@ -527,6 +577,25 @@ body {
 </div>
 
 <!-- ═══════════════════════════════════════════════ -->
+<!-- SCREEN 4: SUCCESS                              -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="screen" id="screen-success">
+  <div class="header">
+    <div class="logo">ONCHAIN ROACHES</div>
+  </div>
+  <div class="success-body">
+    <canvas class="mint-roach-preview" id="success-canvas" width="160" height="160"></canvas>
+    <div class="success-title">YOU'RE IN.</div>
+    <div class="success-sub" id="success-msg">Token minted. Welcome to the colony.</div>
+    <div class="success-tx" id="success-tx"></div>
+    <div style="display:flex;flex-direction:column;gap:10px;width:100%;max-width:360px">
+      <button class="btn btn-primary" id="btn-mint-more" onclick="mintMore()" style="display:none">MINT MORE</button>
+      <button class="btn btn-outline" onclick="goToLanding()">BACK TO HOME</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
 <!-- SCREEN 3: MINT CONFIRM                         -->
 <!-- ═══════════════════════════════════════════════ -->
 <div class="screen" id="screen-mint">
@@ -564,18 +633,10 @@ const CHAIN_ID         = 11155111; // Sepolia
 const ABI = [
   "function mintFree(bytes32 nonce, uint256 expiry, bytes calldata sig) external",
   "function mintPaid(uint256 amount) external payable",
-  "function totalSupply() view returns (uint256)",
-  "function freeSupply() view returns (uint256)",
-  "function paidSupply() view returns (uint256)",
-  "function freeMinted() view returns (uint256)",
-  "function paidMinted() view returns (uint256)",
-  "function paidPrice() view returns (uint256)",
-  "function maxPaidMintPerWallet() view returns (uint256)",
-  "function maxFreeMintPerWallet() view returns (uint256)",
-  "function mintingOpen() view returns (bool)",
+  "function totalMinted() view returns (uint256)",
   "function freeMintCount(address) view returns (uint256)",
   "function paidMintCount(address) view returns (uint256)",
-  "function tokenURI(uint256) view returns (string)",
+  "function mintingOpen() view returns (bool)",
 ];
 
 // ═══════════════════════════════════════════════════════════
@@ -860,16 +921,15 @@ async function refreshStats() {
 // PAID AMOUNT
 // ═══════════════════════════════════════════════════════════
 function changeAmount(delta) {
-  const remaining = maxPaidPerWallet - paidAlreadyMinted;
+  const remaining = MAX_PAID - paidAlreadyMinted;
   paidAmount = Math.max(1, Math.min(remaining, paidAmount + delta));
   updateAmountDisplay();
 }
 
 function updateAmountDisplay() {
-  const remaining = maxPaidPerWallet - paidAlreadyMinted;
+  const remaining = MAX_PAID - paidAlreadyMinted;
   document.getElementById("amount-display").textContent = paidAmount;
-  document.getElementById("amount-total").textContent   = `TOTAL: ${(paidPrice * paidAmount).toFixed(4)} ETH`;
-  // Disable + if at limit
+  document.getElementById("amount-total").textContent   = "TOTAL: " + (PAID_PRICE_ETH * paidAmount).toFixed(4) + " ETH";
   const plusBtn = document.querySelector(".amount-btn:last-of-type");
   if (plusBtn) plusBtn.disabled = paidAmount >= remaining;
 }
@@ -929,12 +989,11 @@ async function startFreeMint() {
     if (!walletAddress) return; // still not connected
   }
 
-  const open = await contract.mintingOpen();
-  if (!open) { setLandingStatus("Minting is not open yet.", "err"); return; }
-
-  const count = await contract.freeMintCount(walletAddress);
-  if (Number(count) >= maxFreePerWallet) {
-    setLandingStatus("You've already used your free mint.", "err");
+  // freeMintCount already cached in refreshStats
+  // Just check paidAlreadyMinted and re-read free count
+  const count = await (contract || readContract).freeMintCount(walletAddress);
+  if (Number(count) >= MAX_FREE) {
+    setLandingStatus("You have already used your free mint.", "err");
     return;
   }
 
@@ -981,12 +1040,9 @@ async function startPaidMint() {
     if (!walletAddress) return;
   }
 
-  const open = await contract.mintingOpen();
-  if (!open) { setLandingStatus("Minting is not open yet.", "err"); return; }
-
-  const count = await contract.paidMintCount(walletAddress);
-  if (Number(count) + paidAmount > maxPaidPerWallet) {
-    setLandingStatus(`You can only mint ${maxPaidPerWallet} paid total. Used: ${count}`, "err");
+  const remaining = MAX_PAID - paidAlreadyMinted;
+  if (remaining <= 0) {
+    setLandingStatus("You have reached the paid mint limit.", "err");
     return;
   }
 
@@ -1254,8 +1310,7 @@ async function confirmMint() {
       if (!gameSig) throw new Error("No game signature");
       tx = await contract.mintFree(gameSig.nonce, gameSig.expiry, gameSig.signature);
     } else {
-      const value   = ethers.parseEther((paidPrice * paidAmount).toFixed(18));
-      // Check balance before submitting
+      const value   = ethers.parseEther((PAID_PRICE_ETH * paidAmount).toFixed(18));
       const balance = await provider.getBalance(walletAddress);
       if (balance < value) {
         throw { message: "insufficient funds" };
@@ -1268,29 +1323,34 @@ async function confirmMint() {
 
     const receipt = await tx.wait();
     showTxBar(false);
-    const tokenId = mintMode === "free"
-      ? Number(await (contract || readContract).freeMinted())
-      : Number(await (contract || readContract).freeSupply()) + Number(await (contract || readContract).paidMinted());
-
-    setMintStatus("✓ MINTED. Token #" + tokenId + " is yours.", "ok");
-    btn.textContent = "MINTED ✓";
-
-    // Reset game sig
+    // Show success screen
     gameSig = null;
     gameSession = null;
-
-    // Refresh stats immediately
     await refreshStats();
 
-    // Show mint more button
-    const remaining = maxPaidPerWallet - paidAlreadyMinted;
+    // Draw the minted roach on success canvas
+    const sc = document.getElementById("success-canvas");
+    if (sc) {
+      const tm = Number(await (contract || readContract).totalMinted());
+      drawPreviewOnCanvas(sc, tm, Math.floor(160/24));
+    }
+
+    // Success message
+    document.getElementById("success-msg").textContent =
+      mintMode === "free"
+        ? "Free mint claimed. Welcome to the colony."
+        : paidAmount + " roach" + (paidAmount > 1 ? "es" : "") + " minted. Welcome to the colony.";
+    document.getElementById("success-tx").textContent = "tx: " + receipt.hash.slice(0,10) + "..." + receipt.hash.slice(-6);
+
+    // Show mint more if slots remain
+    const remaining = MAX_PAID - paidAlreadyMinted;
     const mintMoreBtn = document.getElementById("btn-mint-more");
     if (mintMoreBtn) {
-      if (mintMode === "free" || remaining > 0) {
-        mintMoreBtn.style.display = "block";
-        mintMoreBtn.textContent   = remaining > 0 ? "MINT MORE (" + remaining + " remaining)" : "MINT MORE";
-      }
+      mintMoreBtn.style.display = remaining > 0 ? "block" : "none";
+      if (remaining > 0) mintMoreBtn.textContent = "MINT MORE (" + remaining + " left)";
     }
+
+    showScreen("screen-success");
   } catch(e) {
     showTxBar(false);
     btn.disabled = false;
@@ -1332,16 +1392,9 @@ function setMintStatus(msg, type) {
 }
 
 function mintMore() {
-  // Reset mint screen for another round
-  const btn = document.getElementById("btn-confirm-mint");
-  btn.disabled = false;
-  btn.textContent = "CONFIRM MINT";
-  document.getElementById("btn-mint-more").style.display = "none";
-  setMintStatus("", "");
-  // If free was used, go straight to paid
   mintMode = "paid";
   gameSig  = null;
-  showMintScreen();
+  goToChoose();
 }
 
 // ═══════════════════════════════════════════════════════════
