@@ -794,123 +794,69 @@ function clearError() {
 // ═══════════════════════════════════════════════════════════
 // STATS
 // ═══════════════════════════════════════════════════════════
+// ── HARDCODED CONSTANTS ──
+const TOTAL_SUPPLY   = 6969;
+const PAID_PRICE_ETH = 0.0003;
+const MAX_FREE       = 1;
+const MAX_PAID       = 10;
+
 async function refreshStats() {
   let c = contract || readContract;
-  // If no contract yet, try to init read contract with wallet provider
-  if (!c && window.ethereum) {
-    try {
-      const p = new ethers.BrowserProvider(window.ethereum);
-      c = new ethers.Contract(CONTRACT_ADDRESS, ABI, p);
-      readContract = c;
-    } catch(e) {}
-  }
   if (!c) return;
   try {
-    const [fm, pm, fs, ps, ts, price, maxPaid, maxFree] = await Promise.all([
-      c.freeMinted(),
-      c.paidMinted(),
-      c.freeSupply(),
-      c.paidSupply(),
-      c.totalSupply(),
-      c.paidPrice(),
-      c.maxPaidMintPerWallet(),
-      c.maxFreeMintPerWallet(),
-    ]);
-
-    const total   = Number(ts);
-    const minted  = Number(fm) + Number(pm);
-    const pct     = Math.round(minted / total * 100);
-    const diff    = getDifficulty(pct);
-
-    paidPrice        = Number(ethers.formatEther(price));
-    maxPaidPerWallet = Number(maxPaid);
-    maxFreePerWallet = Number(maxFree);
-
-    document.getElementById("hdr-minted").textContent   = minted;
-    document.getElementById("hdr-total").textContent    = total;
-    document.getElementById("free-minted").textContent  = Number(fm);
-    document.getElementById("free-supply").textContent  = Number(fs);
-    document.getElementById("paid-minted").textContent  = Number(pm);
-    document.getElementById("paid-supply").textContent  = Number(ps);
-
-    // Block bar
+    // ONE RPC call — totalMinted
+    const minted = Number(await c.totalMinted());
+    const pct    = Math.round(minted / TOTAL_SUPPLY * 100);
+    const diff   = getDifficulty(pct);
     const BLOCKS = 20;
-    const freeBlocks  = Math.round(Number(fm) / Number(fs) * BLOCKS);
-    const paidBlocks  = Math.round(Number(pm) / Number(ps) * BLOCKS);
-    document.getElementById("free-blocks").textContent =
-      "█".repeat(freeBlocks) + "░".repeat(BLOCKS - freeBlocks);
-    document.getElementById("paid-blocks").textContent =
-      "█".repeat(paidBlocks) + "░".repeat(BLOCKS - paidBlocks);
-
+    const filled = Math.round(minted / TOTAL_SUPPLY * BLOCKS);
+    const bar    = "█".repeat(filled) + "░".repeat(BLOCKS - filled);
     const tierLabel = pct < 25 ? "EASY" : pct < 50 ? "MEDIUM" : pct < 75 ? "HARD" : pct < 90 ? "BRUTAL" : "NO MERCY";
-    document.getElementById("diff-label").textContent = pct + "% MINTED";
-    const badge = document.getElementById("diff-badge");
-    if (badge) badge.textContent = tierLabel;
-    document.getElementById("paid-price-label").textContent = paidPrice + " ETH";
-    const heroPrice = document.getElementById("hero-price");
-    if (heroPrice) heroPrice.textContent = paidPrice;
-    // Sync choose screen supply
-    const cm = document.getElementById("choose-minted");
-    const ct = document.getElementById("choose-total");
-    const cb = document.getElementById("choose-blocks");
-    if (cm) cm.textContent = minted;
-    if (ct) ct.textContent = total;
-    if (cb) cb.textContent = "█".repeat(Math.round(minted/total*20)) + "░".repeat(20 - Math.round(minted/total*20));
-    const cp = document.getElementById("choose-pct");
-    if (cp) cp.textContent = pct + "% MINTED";
-    // Sync hero bar
-    const hm2 = document.getElementById("hdr-minted2");
-    const ht2 = document.getElementById("hdr-total2");
-    const fb  = document.getElementById("free-blocks");
-    if (hm2) hm2.textContent = minted;
-    if (ht2) ht2.textContent = total;
-    if (fb)  fb.textContent  = "█".repeat(Math.round(minted/total*20)) + "░".repeat(20 - Math.round(minted/total*20));
-    // Sync choose diff badge
+
+    // Update bars
+    ["supply-bar","supply-bar-choose"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = bar;
+    });
+    ["supply-count","supply-count-choose"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = minted + " / " + TOTAL_SUPPLY + " MINTED · " + pct + "%";
+    });
+
+    // Diff badge + game detail
     const cdb = document.getElementById("choose-diff-badge");
     const cgd = document.getElementById("choose-game-detail");
     if (cdb) cdb.textContent = tierLabel;
     if (cgd) cgd.textContent = diff.rounds + " rounds · " + diff.lives + (diff.lives===1?" life":" lives") + " · " + diff.speed + "ms";
 
-    // Check wallet free mint status
+    // Wallet checks — 2 more RPC calls only when connected
     if (walletAddress) {
-      const freeCount = await c.freeMintCount(walletAddress);
-      const paidCount = await c.paidMintCount(walletAddress);
+      const [freeCount, paidCount] = await Promise.all([
+        c.freeMintCount(walletAddress),
+        c.paidMintCount(walletAddress),
+      ]);
       paidAlreadyMinted = Number(paidCount);
-      const usedFree    = Number(freeCount) >= maxFreePerWallet;
-      const remaining   = maxPaidPerWallet - paidAlreadyMinted;
-      const usedPaid    = remaining <= 0;
+      const usedFree  = Number(freeCount) >= MAX_FREE;
+      const remaining = MAX_PAID - paidAlreadyMinted;
 
-      // Cap paidAmount to remaining
       if (paidAmount > remaining && remaining > 0) paidAmount = remaining;
-      if (remaining <= 0) paidAmount = 0;
+      if (remaining <= 0) paidAmount = 1;
 
       const btnFree = document.getElementById("btn-free");
-      if (usedFree) {
-        btnFree.disabled = true;
-        btnFree.textContent = "FREE MINT USED";
-        btnFree.style.opacity = "0.4";
-        btnFree.style.cursor  = "not-allowed";
-      } else {
-        btnFree.disabled = false;
-        btnFree.textContent = "PLAY TO MINT";
-        btnFree.style.opacity = "1";
-        btnFree.style.cursor  = "pointer";
+      if (btnFree) {
+        btnFree.disabled      = usedFree;
+        btnFree.textContent   = usedFree ? "FREE MINT USED" : "PLAY TO MINT";
+        btnFree.style.opacity = usedFree ? "0.4" : "1";
+        btnFree.style.cursor  = usedFree ? "not-allowed" : "pointer";
       }
-
       const btnPaid = document.getElementById("btn-paid");
-      if (usedPaid) {
-        btnPaid.disabled = true;
-        btnPaid.textContent = "LIMIT REACHED";
-        btnPaid.style.opacity = "0.4";
-      } else {
-        btnPaid.disabled = false;
-        btnPaid.textContent = "MINT NOW";
-        btnPaid.style.opacity = "1";
+      if (btnPaid) {
+        btnPaid.disabled      = remaining <= 0;
+        btnPaid.textContent   = remaining <= 0 ? "LIMIT REACHED" : "MINT NOW";
+        btnPaid.style.opacity = remaining <= 0 ? "0.4" : "1";
       }
-
-      // Show remaining in card
       const remEl = document.getElementById("paid-remaining");
-      if (remEl) remEl.textContent = remaining > 0 ? `${remaining} remaining` : "none left";
+      if (remEl) remEl.textContent = remaining > 0 ? remaining + " remaining" : "none left";
     }
 
     updateAmountDisplay();
