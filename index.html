@@ -42,6 +42,9 @@ body {
   image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
+@media (max-width: 768px) {
+  #bg-canvas { display: none; }
+}
 
 /* ── SCREENS ── */
 .screen { position: relative; z-index: 1; display: none; min-height: 100vh; flex-direction: column; }
@@ -597,24 +600,24 @@ async function initReadContract() {
     "https://sepolia.drpc.org",
     "https://rpc2.sepolia.org",
     "https://rpc.sepolia.org",
-    "https://endpoints.omniatech.io/v1/eth/sepolia/public",
-    "https://ethereum-sepolia-rpc.publicnode.com",
     "https://gateway.tenderly.co/public/sepolia",
   ];
-  for (const rpc of rpcs) {
-    try {
+
+  // Race all RPCs — use whichever responds first
+  try {
+    const winner = await Promise.any(rpcs.map(async rpc => {
       const p = new ethers.JsonRpcProvider(rpc);
-      const block = await Promise.race([
+      await Promise.race([
         p.getBlockNumber(),
-        new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 3000))
+        new Promise((_, rej) => setTimeout(() => rej(), 4000))
       ]);
-      readContract = new ethers.Contract(CONTRACT_ADDRESS, ABI, p);
-      console.log("RPC ok:", rpc, "block:", block);
-      await refreshStats();
-      return;
-    } catch(e) { console.warn("RPC failed:", rpc, e.message); }
+      return new ethers.Contract(CONTRACT_ADDRESS, ABI, p);
+    }));
+    readContract = winner;
+    await refreshStats();
+  } catch(e) {
+    console.warn("All RPCs failed — will retry after wallet connect");
   }
-  console.error("All RPCs failed — stats will load after wallet connect");
 }
 initReadContract();
 
