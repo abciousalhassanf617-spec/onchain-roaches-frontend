@@ -636,12 +636,15 @@ function getDifficulty(pct) {
 // WALLET
 // ═══════════════════════════════════════════════════════════
 async function connectWallet() {
-  if (!window.ethereum) {
-    showError("No wallet detected. Install MetaMask to continue.");
+  // Support window.ethereum (MetaMask, Zerion desktop)
+  // and window.zerionWallet / other injected providers (Zerion mobile)
+  const eth = window.ethereum || window.zerionWallet || window.coinbaseWalletExtension;
+  if (!eth) {
+    showError("No wallet detected. Open this page inside your Zerion or MetaMask app.");
     return;
   }
   try {
-    provider = new ethers.BrowserProvider(window.ethereum);
+    provider = new ethers.BrowserProvider(eth);
     await provider.send("eth_requestAccounts", []);
 
     // Check and switch network
@@ -866,11 +869,10 @@ function goToLanding() {
 }
 
 function goToChoose() {
-  if (!walletAddress) { connectWallet(); return; }
   showScreen("screen-choose");
-  // Sync wallet btn on choose screen
+  // Sync wallet btn if connected
   const btn2 = document.getElementById("wallet-btn2");
-  if (btn2) {
+  if (btn2 && walletAddress) {
     btn2.textContent = walletAddress.slice(0,6) + "..." + walletAddress.slice(-4);
     btn2.classList.add("connected");
   }
@@ -902,7 +904,10 @@ function drawPreviewOnCanvas(canvas, seed, cellSize) {
 // FREE MINT FLOW
 // ═══════════════════════════════════════════════════════════
 async function startFreeMint() {
-  if (!walletAddress) { connectWallet(); return; }
+  if (!walletAddress) {
+    await connectWallet();
+    if (!walletAddress) return; // still not connected
+  }
 
   const open = await contract.mintingOpen();
   if (!open) { setLandingStatus("Minting is not open yet.", "err"); return; }
@@ -951,7 +956,10 @@ function launchGame() {
 // PAID MINT FLOW
 // ═══════════════════════════════════════════════════════════
 async function startPaidMint() {
-  if (!walletAddress) { connectWallet(); return; }
+  if (!walletAddress) {
+    await connectWallet();
+    if (!walletAddress) return;
+  }
 
   const open = await contract.mintingOpen();
   if (!open) { setLandingStatus("Minting is not open yet.", "err"); return; }
