@@ -657,11 +657,11 @@ let gameSig     = null;
 // Using publicnode — reliable, no key needed
 // Try multiple RPCs with fallback
 async function initReadContract() {
+  // Use Railway as RPC proxy — no CORS issues
   const rpcs = [
+    "https://onchain-roach-server-production.up.railway.app/rpc",
     "https://sepolia.drpc.org",
     "https://gateway.tenderly.co/public/sepolia",
-    "https://endpoints.omniatech.io/v1/eth/sepolia/public",
-    "https://1rpc.io/sepolia",
   ];
 
   // Race all RPCs — use whichever responds first
