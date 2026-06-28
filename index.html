@@ -944,10 +944,10 @@ async function startFreeMint() {
   }
 
   try {
-    const fm  = await contract.freeMinted();
-    const ts  = await contract.totalSupply();
-    const pct = Math.round((Number(fm)) / Number(ts) * 100);
-    const diff = getDifficulty(pct);
+    // Use hardcoded total, get totalMinted for pct
+    const minted = Number(await (contract || readContract).totalMinted());
+    const pct    = Math.round(minted / TOTAL_SUPPLY * 100);
+    const diff   = getDifficulty(pct);
 
     const res = await fetch(BACKEND_URL + "/api/session/start", {
       method: "POST",
@@ -1218,15 +1218,11 @@ async function showMintScreen() {
 
   // Preview next token
   try {
-    let nextId;
-    if (mintMode === "free") {
-      const fm = await contract.freeMinted();
-      nextId = Number(fm) + 1;
-    } else {
-      const fs = await contract.freeSupply();
-      const pm = await contract.paidMinted();
-      nextId = Number(fs) + Number(pm) + 1;
-    }
+    // Use totalMinted + hardcoded supplies for nextId
+    const tm = Number(await (contract || readContract).totalMinted());
+    const nextId = mintMode === "free"
+      ? Math.min(tm + 1, 3484)
+      : 3484 + (tm - Math.min(tm, 3484)) + 1;
 
     document.getElementById("mint-token-label").textContent = `ONCHAIN ROACH #${nextId}`;
     drawPreview(nextId);
