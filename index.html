@@ -402,7 +402,7 @@ body {
   <div class="header">
     <div class="logo">ONCHAIN ROACHES</div>
     <div class="header-right">
-      <div class="stat-pill">MINTED <span id="hdr-minted-choose">0</span> / <span id="hdr-total-choose">6969</span></div>
+      <div class="stat-pill">MINTED <span id="hdr-minted">0</span> / <span id="hdr-total">6969</span></div>
       <button class="wallet-btn connected" id="wallet-btn2" onclick="connectWallet()">CONNECT</button>
     </div>
   </div>
@@ -593,84 +593,30 @@ let gameSig     = null;
 // Using publicnode — reliable, no key needed
 // Try multiple RPCs with fallback
 async function initReadContract() {
-  // If wallet already connected, use its provider first (most reliable)
-  if (window.ethereum && walletAddress) {
-    try {
-      const wp = new ethers.BrowserProvider(window.ethereum);
-      readContract = new ethers.Contract(CONTRACT_ADDRESS, ABI, wp);
-      await readContract.totalSupply();
-      await refreshStats();
-      setLandingStatus("", "");
-      return;
-    } catch(e) { console.warn("Wallet RPC failed:", e.message); readContract = null; }
-  }
   const rpcs = [
     "https://sepolia.drpc.org",
-    "https://ethereum-sepolia-rpc.publicnode.com",
-    "https://rpc.ankr.com/eth_sepolia",
-    "https://rpc.sepolia.ethpandaops.io",
-    "https://ethereum-sepolia.blockpi.network/v1/rpc/public",
+    "https://rpc2.sepolia.org",
+    "https://rpc.sepolia.org",
     "https://endpoints.omniatech.io/v1/eth/sepolia/public",
+    "https://ethereum-sepolia-rpc.publicnode.com",
+    "https://gateway.tenderly.co/public/sepolia",
   ];
-  setLandingStatus("Connecting to network...", "");
   for (const rpc of rpcs) {
     try {
       const p = new ethers.JsonRpcProvider(rpc);
       const block = await Promise.race([
         p.getBlockNumber(),
-        new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 8000))
+        new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 3000))
       ]);
       readContract = new ethers.Contract(CONTRACT_ADDRESS, ABI, p);
       console.log("RPC ok:", rpc, "block:", block);
-      // Test contract call — if this throws, try next RPC
-      await Promise.race([
-        readContract.totalSupply(),
-        new Promise((_, rej) => setTimeout(() => rej(new Error("contract timeout")), 8000))
-      ]);
       await refreshStats();
-      setLandingStatus("", "");
       return;
-    } catch(e) { console.warn("RPC failed:", rpc, e.message); readContract = null; }
+    } catch(e) { console.warn("RPC failed:", rpc, e.message); }
   }
-  setLandingStatus("Network unavailable. Connect wallet to load stats.", "err");
   console.error("All RPCs failed — stats will load after wallet connect");
 }
-// Paint hardcoded defaults to DOM immediately so UI is never blank
-function renderDefaults() {
-  const TOTAL = 6969;
-  const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-  setEl("hdr-minted",        "0");
-  setEl("hdr-total",         TOTAL);
-  setEl("hdr-minted-choose", "0");
-  setEl("hdr-total-choose",  TOTAL);
-  setEl("hdr-minted2",       "0");
-  setEl("hdr-total2",        TOTAL);
-  setEl("choose-minted",     "0");
-  setEl("choose-total",      TOTAL);
-  setEl("choose-pct",        "0% MINTED");
-  setEl("diff-label",        "0% MINTED");
-  setEl("paid-price-label",  paidPrice + " ETH");
-  setEl("amount-display",    paidAmount);
-  setEl("amount-total",      "TOTAL: " + (paidPrice * paidAmount).toFixed(4) + " ETH");
-  setEl("paid-remaining",    maxPaidPerWallet + " remaining");
-  setEl("choose-diff-badge", "EASY");
-  setEl("choose-game-detail","5 rounds · 3 lives · 600ms");
-  setEl("diff-badge",        "EASY");
-  const blocks = "░".repeat(20);
-  setEl("free-blocks",  blocks);
-  setEl("paid-blocks",  blocks);
-  setEl("choose-blocks",blocks);
-}
-// Wait for DOM before painting defaults and starting RPC
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", () => { renderDefaults(); initReadContract(); });
-} else {
-  renderDefaults();
-  initReadContract();
-}
-
-// Auto-refresh stats every 30 seconds
-setInterval(() => { refreshStats(); }, 30000);
+initReadContract();
 
 // Difficulty from contract state
 const DIFFICULTY = [
@@ -737,10 +683,19 @@ async function connectWallet() {
     signer  = await provider.getSigner();
     walletAddress = await signer.getAddress();
     contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+    // Use wallet provider for reads too — most reliable on mobile
+    readContract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
 
     const btn = document.getElementById("wallet-btn");
     btn.textContent = walletAddress.slice(0,6) + "..." + walletAddress.slice(-4);
     btn.classList.add("connected");
+
+    // Sync choose screen wallet btn
+    const btn2 = document.getElementById("wallet-btn2");
+    if (btn2) {
+      btn2.textContent = walletAddress.slice(0,6) + "..." + walletAddress.slice(-4);
+      btn2.classList.add("connected");
+    }
 
     await refreshStats();
     clearError();
@@ -787,40 +742,27 @@ async function refreshStats() {
     maxPaidPerWallet = Number(maxPaid);
     maxFreePerWallet = Number(maxFree);
 
-    const elHdrMinted = document.getElementById("hdr-minted");
-    const elHdrTotal  = document.getElementById("hdr-total");
-    if (elHdrMinted) elHdrMinted.textContent = minted;
-    if (elHdrTotal)  elHdrTotal.textContent  = total;
-    const elFreeMinted = document.getElementById("free-minted");
-    const elFreeSupply = document.getElementById("free-supply");
-    const elPaidMinted = document.getElementById("paid-minted");
-    const elPaidSupply = document.getElementById("paid-supply");
-    if (elFreeMinted) elFreeMinted.textContent = Number(fm);
-    if (elFreeSupply) elFreeSupply.textContent = Number(fs);
-    if (elPaidMinted) elPaidMinted.textContent = Number(pm);
-    if (elPaidSupply) elPaidSupply.textContent = Number(ps);
-    // Update choose-screen header (separate IDs to avoid duplicate)
-    const elChooseMinted = document.getElementById("hdr-minted-choose");
-    const elChooseTotal  = document.getElementById("hdr-total-choose");
-    if (elChooseMinted) elChooseMinted.textContent = minted;
-    if (elChooseTotal)  elChooseTotal.textContent  = total;
+    document.getElementById("hdr-minted").textContent   = minted;
+    document.getElementById("hdr-total").textContent    = total;
+    document.getElementById("free-minted").textContent  = Number(fm);
+    document.getElementById("free-supply").textContent  = Number(fs);
+    document.getElementById("paid-minted").textContent  = Number(pm);
+    document.getElementById("paid-supply").textContent  = Number(ps);
 
     // Block bar
     const BLOCKS = 20;
     const freeBlocks  = Math.round(Number(fm) / Number(fs) * BLOCKS);
     const paidBlocks  = Math.round(Number(pm) / Number(ps) * BLOCKS);
-    const elFreeBlocks = document.getElementById("free-blocks");
-    const elPaidBlocks = document.getElementById("paid-blocks");
-    if (elFreeBlocks) elFreeBlocks.textContent = "█".repeat(freeBlocks) + "░".repeat(BLOCKS - freeBlocks);
-    if (elPaidBlocks) elPaidBlocks.textContent = "█".repeat(paidBlocks) + "░".repeat(BLOCKS - paidBlocks);
+    document.getElementById("free-blocks").textContent =
+      "█".repeat(freeBlocks) + "░".repeat(BLOCKS - freeBlocks);
+    document.getElementById("paid-blocks").textContent =
+      "█".repeat(paidBlocks) + "░".repeat(BLOCKS - paidBlocks);
 
     const tierLabel = pct < 25 ? "EASY" : pct < 50 ? "MEDIUM" : pct < 75 ? "HARD" : pct < 90 ? "BRUTAL" : "NO MERCY";
-    const elDiffLabel = document.getElementById("diff-label");
-    if (elDiffLabel) elDiffLabel.textContent = pct + "% MINTED";
+    document.getElementById("diff-label").textContent = pct + "% MINTED";
     const badge = document.getElementById("diff-badge");
     if (badge) badge.textContent = tierLabel;
-    const elPaidPrice = document.getElementById("paid-price-label");
-    if (elPaidPrice) elPaidPrice.textContent = paidPrice + " ETH";
+    document.getElementById("paid-price-label").textContent = paidPrice + " ETH";
     const heroPrice = document.getElementById("hero-price");
     if (heroPrice) heroPrice.textContent = paidPrice;
     // Sync choose screen supply
@@ -847,9 +789,8 @@ async function refreshStats() {
 
     // Check wallet free mint status
     if (walletAddress) {
-      let freeCount = 0, paidCount = 0;
-      try { freeCount = await c.freeMintCount(walletAddress); } catch(e) { console.warn("freeMintCount failed:", e.message); }
-      try { paidCount = await c.paidMintCount(walletAddress); } catch(e) { console.warn("paidMintCount failed:", e.message); }
+      const freeCount = await c.freeMintCount(walletAddress);
+      const paidCount = await c.paidMintCount(walletAddress);
       paidAlreadyMinted = Number(paidCount);
       const usedFree    = Number(freeCount) >= maxFreePerWallet;
       const remaining   = maxPaidPerWallet - paidAlreadyMinted;
@@ -860,31 +801,27 @@ async function refreshStats() {
       if (remaining <= 0) paidAmount = 0;
 
       const btnFree = document.getElementById("btn-free");
-      if (btnFree) {
-        if (usedFree) {
-          btnFree.disabled = true;
-          btnFree.textContent = "FREE MINT USED";
-          btnFree.style.opacity = "0.4";
-          btnFree.style.cursor  = "not-allowed";
-        } else {
-          btnFree.disabled = false;
-          btnFree.textContent = "PLAY TO MINT";
-          btnFree.style.opacity = "1";
-          btnFree.style.cursor  = "pointer";
-        }
+      if (usedFree) {
+        btnFree.disabled = true;
+        btnFree.textContent = "FREE MINT USED";
+        btnFree.style.opacity = "0.4";
+        btnFree.style.cursor  = "not-allowed";
+      } else {
+        btnFree.disabled = false;
+        btnFree.textContent = "PLAY TO MINT";
+        btnFree.style.opacity = "1";
+        btnFree.style.cursor  = "pointer";
       }
 
       const btnPaid = document.getElementById("btn-paid");
-      if (btnPaid) {
-        if (usedPaid) {
-          btnPaid.disabled = true;
-          btnPaid.textContent = "LIMIT REACHED";
-          btnPaid.style.opacity = "0.4";
-        } else {
-          btnPaid.disabled = false;
-          btnPaid.textContent = "MINT NOW";
-          btnPaid.style.opacity = "1";
-        }
+      if (usedPaid) {
+        btnPaid.disabled = true;
+        btnPaid.textContent = "LIMIT REACHED";
+        btnPaid.style.opacity = "0.4";
+      } else {
+        btnPaid.disabled = false;
+        btnPaid.textContent = "MINT NOW";
+        btnPaid.style.opacity = "1";
       }
 
       // Show remaining in card
@@ -893,7 +830,7 @@ async function refreshStats() {
     }
 
     updateAmountDisplay();
-  } catch(e) { console.error("refreshStats:", e); throw e; }
+  } catch(e) { console.error("refreshStats:", e); }
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -907,10 +844,8 @@ function changeAmount(delta) {
 
 function updateAmountDisplay() {
   const remaining = maxPaidPerWallet - paidAlreadyMinted;
-  const elAmt = document.getElementById("amount-display");
-  const elTotal = document.getElementById("amount-total");
-  if (elAmt)   elAmt.textContent   = paidAmount;
-  if (elTotal) elTotal.textContent = `TOTAL: ${(paidPrice * paidAmount).toFixed(4)} ETH`;
+  document.getElementById("amount-display").textContent = paidAmount;
+  document.getElementById("amount-total").textContent   = `TOTAL: ${(paidPrice * paidAmount).toFixed(4)} ETH`;
   // Disable + if at limit
   const plusBtn = document.querySelector(".amount-btn:last-of-type");
   if (plusBtn) plusBtn.disabled = paidAmount >= remaining;
@@ -969,22 +904,18 @@ function drawPreviewOnCanvas(canvas, seed, cellSize) {
 async function startFreeMint() {
   if (!walletAddress) { connectWallet(); return; }
 
-  const c = contract || readContract;
-  if (!c) { setLandingStatus("Still connecting to network. Try again in a moment.", "err"); return; }
-
-  let open = true;
-  try { open = await c.mintingOpen(); } catch(e) { console.warn("mintingOpen() unavailable, assuming open:", e.message); }
+  const open = await contract.mintingOpen();
   if (!open) { setLandingStatus("Minting is not open yet.", "err"); return; }
 
-  const count = await c.freeMintCount(walletAddress);
+  const count = await contract.freeMintCount(walletAddress);
   if (Number(count) >= maxFreePerWallet) {
     setLandingStatus("You've already used your free mint.", "err");
     return;
   }
 
   try {
-    const fm  = await c.freeMinted();
-    const ts  = await c.totalSupply();
+    const fm  = await contract.freeMinted();
+    const ts  = await contract.totalSupply();
     const pct = Math.round((Number(fm)) / Number(ts) * 100);
     const diff = getDifficulty(pct);
 
@@ -1022,14 +953,10 @@ function launchGame() {
 async function startPaidMint() {
   if (!walletAddress) { connectWallet(); return; }
 
-  const c = contract || readContract;
-  if (!c) { setLandingStatus("Still connecting to network. Try again in a moment.", "err"); return; }
-
-  let open = true;
-  try { open = await c.mintingOpen(); } catch(e) { console.warn("mintingOpen() unavailable, assuming open:", e.message); }
+  const open = await contract.mintingOpen();
   if (!open) { setLandingStatus("Minting is not open yet.", "err"); return; }
 
-  const count = await c.paidMintCount(walletAddress);
+  const count = await contract.paidMintCount(walletAddress);
   if (Number(count) + paidAmount > maxPaidPerWallet) {
     setLandingStatus(`You can only mint ${maxPaidPerWallet} paid total. Used: ${count}`, "err");
     return;
@@ -1261,40 +1188,22 @@ async function showMintScreen() {
 
   // Preview next token
   try {
-    const c = contract || readContract;
-    if (!c) { setMintStatus("Not connected to network.", "err"); return; }
     let nextId;
     if (mintMode === "free") {
-      const fm = await c.freeMinted();
+      const fm = await contract.freeMinted();
       nextId = Number(fm) + 1;
     } else {
-      const fs = await c.freeSupply();
-      const pm = await c.paidMinted();
+      const fs = await contract.freeSupply();
+      const pm = await contract.paidMinted();
       nextId = Number(fs) + Number(pm) + 1;
     }
 
-    const endId = mintMode === "paid" && paidAmount > 1 ? nextId + paidAmount - 1 : nextId;
-    const tokenLabel = mintMode === "paid" && paidAmount > 1
-      ? `ONCHAIN ROACH #${nextId} – #${endId}`
-      : `ONCHAIN ROACH #${nextId}`;
-    document.getElementById("mint-token-label").textContent = tokenLabel;
+    document.getElementById("mint-token-label").textContent = `ONCHAIN ROACH #${nextId}`;
     drawPreview(nextId);
-    if (mintMode === "paid" && paidAmount > 1) {
-      const canvas = document.getElementById("preview-canvas");
-      if (canvas) {
-        const ctx = canvas.getContext("2d");
-        ctx.fillStyle = "rgba(0,0,0,0.55)";
-        ctx.fillRect(0, canvas.height - 36, canvas.width, 36);
-        ctx.fillStyle = "#c8a97e";
-        ctx.font = "bold 14px monospace";
-        ctx.textAlign = "center";
-        ctx.fillText(`+ ${paidAmount - 1} MORE ROACH${paidAmount > 2 ? "ES" : ""}`, canvas.width / 2, canvas.height - 12);
-      }
-    }
 
     const label = mintMode === "free"
       ? "FREE MINT. Sign to confirm."
-      : `PAID MINT. ${paidAmount} roach${paidAmount > 1 ? "es" : ""} · ${(paidPrice * paidAmount).toFixed(4)} ETH`;
+      : `PAID MINT. ${(paidPrice * paidAmount).toFixed(4)} ETH`;
     setMintStatus(label, "");
   } catch(e) {
     setMintStatus("Preview failed: " + e.message, "err");
@@ -1335,12 +1244,7 @@ async function confirmMint() {
       ? Number(await (contract || readContract).freeMinted())
       : Number(await (contract || readContract).freeSupply()) + Number(await (contract || readContract).paidMinted());
 
-    const lastId = tokenId;
-    const firstId = mintMode === "paid" && paidAmount > 1 ? lastId - paidAmount + 1 : lastId;
-    const successMsg = mintMode === "paid" && paidAmount > 1
-      ? `✓ MINTED. Tokens #${firstId}–#${lastId} are yours.`
-      : `✓ MINTED. Token #${lastId} is yours.`;
-    setMintStatus(successMsg, "ok");
+    setMintStatus("✓ MINTED. Token #" + tokenId + " is yours.", "ok");
     btn.textContent = "MINTED ✓";
 
     // Reset game sig
