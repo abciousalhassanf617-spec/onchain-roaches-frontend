@@ -708,6 +708,8 @@ async function connectWallet() {
     }
 
     await refreshStats();
+    // Retry once after 1s in case provider wasn't ready
+    setTimeout(() => refreshStats().catch(()=>{}), 1000);
     clearError();
   } catch (e) {
     if (e.code === 4001) {
@@ -729,7 +731,15 @@ function clearError() {
 // STATS
 // ═══════════════════════════════════════════════════════════
 async function refreshStats() {
-  const c = contract || readContract;
+  let c = contract || readContract;
+  // If no contract yet, try to init read contract with wallet provider
+  if (!c && window.ethereum) {
+    try {
+      const p = new ethers.BrowserProvider(window.ethereum);
+      c = new ethers.Contract(CONTRACT_ADDRESS, ABI, p);
+      readContract = c;
+    } catch(e) {}
+  }
   if (!c) return;
   try {
     const [fm, pm, fs, ps, ts, price, maxPaid, maxFree] = await Promise.all([
