@@ -895,6 +895,7 @@ function goToLanding() {
 }
 
 function goToChoose() {
+  if (!walletAddress) { connectWallet(); return; }
   showScreen("screen-choose");
   // Sync wallet btn if connected
   const btn2 = document.getElementById("wallet-btn2");
