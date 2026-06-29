@@ -439,14 +439,11 @@ body {
 
     <!-- COPY SECTION -->
     <div class="copy-section">
-      <p class="copy-p">ONCHAIN ROACHES isn't a collection.</p>
-      <p class="copy-p">It's a survivor story.</p>
-      <p class="copy-p">6,969 pixel roaches, drawn at mint,<br>living forever on Ethereum.</p>
-      <p class="copy-p">No roadmap.<br>No promises.<br>No bullshit.</p>
-      <p class="copy-p">Just roaches doing what roaches do.</p>
+      <p class="copy-p">ONCHAIN ROACHES isn't a collection.<br>It's a survivor story.</p>
+      <p class="copy-p">6,969 pixel roaches drawn at mint,<br>living forever on Ethereum.<br>No roadmap. No promises. No bullshit.<br>Just roaches doing what roaches do.</p>
       <p class="copy-p copy-big">Surviving.</p>
       <p class="copy-p copy-and">And remember...</p>
-      <p class="copy-quote">"Surviving is winning, roaches.<br><br>Everything else is bullshit.<br><br>The world rewards survivors,<br>not dreamers.<br><br>Whatever it takes...<br><br>Survive, nymphs."</p>
+      <p class="copy-p">Surviving is winning, roaches.<br>Everything else is bullshit.<br>The world rewards survivors, not dreamers.<br>Whatever it takes....survive, nymphs.</p>
     </div>
   </div>
 </div>
@@ -657,11 +654,9 @@ let gameSig     = null;
 // Using publicnode — reliable, no key needed
 // Try multiple RPCs with fallback
 async function initReadContract() {
-  // Use Railway as RPC proxy — no CORS issues
+  // Railway proxy only — handles CORS for all devices
   const rpcs = [
     "https://onchain-roach-server-production.up.railway.app/rpc",
-    "https://sepolia.drpc.org",
-    "https://gateway.tenderly.co/public/sepolia",
   ];
 
   // Race all RPCs — use whichever responds first
