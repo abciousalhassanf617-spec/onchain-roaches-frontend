@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ONCHAIN ROACHES — Mint</title>
+<link rel="icon" type="image/png" href="favicon.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Unbounded:wght@400;700;900&display=swap');
@@ -623,9 +624,9 @@ body {
 // ═══════════════════════════════════════════════════════════
 // CONFIG
 // ═══════════════════════════════════════════════════════════
-const CONTRACT_ADDRESS = "0x4e2C1021b0936254A14A219c037d703A83E2CB84";
+const CONTRACT_ADDRESS = "0x4916bbca94d4860ba13fa8bb61b49d560a6ecc3c";
 const BACKEND_URL      = "https://onchain-roach-server-production.up.railway.app";
-const CHAIN_ID         = 11155111; // Sepolia
+const CHAIN_ID         = 1; // Ethereum Mainnet
 
 const ABI = [
   "function mintFree(bytes32 nonce, uint256 expiry, bytes calldata sig) external",
@@ -730,18 +731,18 @@ async function connectWallet() {
               method: "wallet_addEthereumChain",
               params: [{
                 chainId: "0x" + CHAIN_ID.toString(16),
-                chainName: "Sepolia Testnet",
+                chainName: "Ethereum Mainnet",
                 nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
-                rpcUrls: ["https://ethereum-sepolia-rpc.publicnode.com"],
-                blockExplorerUrls: ["https://sepolia.etherscan.io"],
+                rpcUrls: ["https://ethereum-rpc.publicnode.com"],
+                blockExplorerUrls: ["https://etherscan.io"],
               }],
             });
           } catch (addErr) {
-            showError("Could not add Sepolia network. Add it manually in MetaMask.");
+            showError("Could not add Ethereum Mainnet. Add it manually in your wallet.");
             return;
           }
         } else {
-          showError("Please switch to Sepolia testnet in your wallet.");
+          showError("Please switch to Ethereum Mainnet in your wallet.");
           return;
         }
       }
