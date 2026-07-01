@@ -644,7 +644,7 @@ let provider, signer, contract, readContract;
 let walletAddress = null;
 let mintMode = null;
 let paidAmount = 1;
-let paidPrice  = 0.0069;
+let paidPrice  = 0.0003;
 let maxPaidPerWallet = 5;
 let maxFreePerWallet = 1;
 let paidAlreadyMinted = 0; // tracks how many paid mints wallet has done
@@ -1239,7 +1239,7 @@ async function showMintScreen() {
 
     const label = mintMode === "free"
       ? "FREE MINT. Sign to confirm."
-      : `PAID MINT. ${(paidPrice * paidAmount).toFixed(4)} ETH`;
+      : `PAID MINT. ${(PAID_PRICE_ETH * paidAmount).toFixed(4)} ETH`;
     setMintStatus(label, "");
   } catch(e) {
     setMintStatus("Preview failed: " + e.message, "err");
