@@ -794,7 +794,7 @@ function clearError() {
 const TOTAL_SUPPLY   = 6969;
 const PAID_PRICE_ETH = 0.0003;
 const MAX_FREE       = 1;
-const MAX_PAID       = 10;
+const MAX_PAID       = 9;
 
 async function refreshStats() {
   let c = contract || readContract;
@@ -888,6 +888,9 @@ function goToLanding() {
   stopGame();
   showScreen("screen-landing");
   refreshStats();
+  // Reset paid amount to 1 on return
+  paidAmount = 1;
+  updateAmountDisplay();
 }
 
 function goToChoose() {
